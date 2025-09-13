@@ -197,7 +197,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
                 {existingImages.map((url) => (
                   <div key={url} className="relative group">
                     <img src={url} alt="img" className="w-full h-24 object-cover rounded border" />
-                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100" onClick={() => removeExistingImage(url)} title="Eliminar">âœ•</Button>
+                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => removeExistingImage(url)} title="Eliminar">âœ•</Button>
                   </div>
                 ))}
               </div>
@@ -208,19 +208,19 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
                 {newPreviews.map((src, idx) => (
                   <div key={idx} className="relative group">
                     <img src={src} alt="new" className="w-full h-24 object-cover rounded border" />
-                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100" onClick={() => removeNewFile(idx)} title="Quitar">âœ•</Button>
+                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => removeNewFile(idx)} title="Quitar">âœ•</Button>
                   </div>
                 ))}
               </div>
             )}
 
             <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFilesChange} className="hidden" />
-            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>+ Agregar imágenes</Button>
+            <Button className='cursor-pointer' type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>+ Agregar imágenes</Button>
             <p className="text-xs text-gray-500 mt-1">Puedes seleccionar varias imÃ¡genes</p>
 
             <div className="flex items-center gap-2 mt-3">
               <Input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://ejemplo.com/imagen.jpg" />
-              <Button type="button" variant="outline" onClick={addUrl}>Agregar URL</Button>
+              <Button type="button" variant="outline" className="cursor-pointer" onClick={addUrl}>Agregar URL</Button>
             </div>
             {newUrls.length > 0 && (
               <div className="flex gap-2 flex-wrap mt-2">
@@ -240,6 +240,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
     </div>
   );
 }
+
 
 
 

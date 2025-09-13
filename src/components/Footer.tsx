@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
@@ -19,7 +19,7 @@ export default function Footer() {
       await signIn(email, password);
       setShowAdminLogin(false);
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+      setError(err.message || 'Error al iniciar sesiÃ³n');
     } finally {
       setLoading(false);
     }
@@ -29,7 +29,7 @@ export default function Footer() {
     try {
       await adminSignOut();
     } catch (err: any) {
-      console.error('Error al cerrar sesión:', err);
+      console.error('Error al cerrar sesiÃ³n:', err);
     }
   };
 
@@ -60,7 +60,7 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4">Síguenos</h4>
+            <h4 className="text-lg font-semibold mb-4">Siguenos</h4>
             <div className="flex space-x-4 text-gray-300">
               <span>Facebook</span>
               <span>Instagram</span>
@@ -84,16 +84,16 @@ export default function Footer() {
             <div className="mt-3 max-w-sm ml-auto">
               <div className="bg-gray-800 p-4 rounded-lg">
                 <h4 className="text-sm font-semibold mb-3 text-right">
-                  {isAdmin ? 'Panel de Administración' : 'Inicio de Sesión'}
+                  {isAdmin ? 'Panel de AdministraciÃ³n' : 'Inicio de SesiÃ³n'}
                 </h4>
 
                 {isAdmin ? (
                   <div className="text-right">
                     <button
                       onClick={handleLogout}
-                      className="text-red-400 hover:text-red-300 text-xs"
+                      className="text-red-400 hover:text-red-300 text-xs cursor-pointer"
                     >
-                      Cerrar sesión
+                      Cerrar sesiÃ³n
                     </button>
                   </div>
                 ) : (
@@ -111,7 +111,7 @@ export default function Footer() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="password" className="block text-xs font-medium text-gray-300 mb-1">Contraseña</label>
+                      <label htmlFor="password" className="block text-xs font-medium text-gray-300 mb-1">ContraseÃ±a</label>
                       <input
                         type="password"
                         id="password"
@@ -126,9 +126,9 @@ export default function Footer() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? 'Iniciando...' : 'Iniciar Sesión'}
+                      {loading ? 'Iniciando...' : 'Iniciar SesiÃ³n'}
                     </button>
                   </form>
                 )}
@@ -144,4 +144,5 @@ export default function Footer() {
     </footer>
   );
 }
+
 

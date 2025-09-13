@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../supabase/supabase';
@@ -68,7 +68,7 @@ export default function Home() {
   }, []);
 
   const handleCreate = async (product: Product) => {
-    // Asegurar que el nuevo producto tenga sus imágenes para el slider
+    // Asegurar que el nuevo producto tenga sus imÃ¡genes para el slider
     let finalImages = product.images || (product.image_url ? [product.image_url] : []);
     if (product.id) {
       const { data: imgs } = await supabase
@@ -162,7 +162,7 @@ export default function Home() {
         {isAdmin && (
           <div id="admin-panel" className="bg-white rounded-lg shadow-md p-6 mb-8 border-2 border-blue-200">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Panel de Administrador</h2>
-            <p className="text-gray-600 mb-4">Gestión de productos de la tienda</p>
+            <p className="text-gray-600 mb-4">GestiÃ³n de productos de la tienda</p>
             <button
               onClick={() => setShowForm(true)}
               className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold cursor-pointer"
@@ -188,7 +188,7 @@ export default function Home() {
                   <button
                     onClick={() => paginate(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Anterior
                   </button>
@@ -198,8 +198,8 @@ export default function Home() {
                       onClick={() => paginate(number)}
                       className={`px-3 py-2 text-sm font-medium rounded-md ${
                         currentPage === number
-                          ? 'text-white bg-blue-600'
-                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50'
+                          ? 'text-white bg-blue-600 cursor-pointer'
+                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer'
                       }`}
                     >
                       {number}
@@ -208,7 +208,7 @@ export default function Home() {
                   <button
                     onClick={() => paginate(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Siguiente
                   </button>
@@ -225,3 +225,5 @@ export default function Home() {
     </div>
   );
 }
+
+

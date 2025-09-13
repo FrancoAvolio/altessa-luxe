@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import Image from 'next/image';
 import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
@@ -58,13 +58,13 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
               ))}
             </div>
             <div className="absolute inset-y-0 left-0 flex items-center">
-              <Button variant="ghost" size="icon" className="bg-black/30 text-white hover:bg-black/40" onClick={prev}>
-                ‹
+              <Button variant="ghost" size="icon" className="bg-black/30 text-white hover:bg-black/40 cursor-pointer" onClick={prev}>
+                â€¹
               </Button>
             </div>
             <div className="absolute inset-y-0 right-0 flex items-center">
-              <Button variant="ghost" size="icon" className="bg-black/30 text-white hover:bg-black/40" onClick={next}>
-                ›
+              <Button variant="ghost" size="icon" className="bg-black/30 text-white hover:bg-black/40 cursor-pointer" onClick={next}>
+                â€º
               </Button>
             </div>
           </>
@@ -78,11 +78,12 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
         <p className="text-xl font-bold text-gray-900">${product.price}</p>
         {isAdmin && (
           <div className="flex space-x-2 mt-2">
-            <Button onClick={() => onEdit(product)} className="flex-1" variant="secondary">Editar</Button>
-            <Button onClick={() => product.id && onDelete(product.id)} className="flex-1" variant="destructive">Eliminar</Button>
+            <Button onClick={() => onEdit(product)} className="flex-1 cursor-pointer" variant="secondary">Editar</Button>
+            <Button onClick={() => product.id && onDelete(product.id)} className="flex-1 cursor-pointer" variant="destructive">Eliminar</Button>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
+

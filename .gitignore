@@ -39,3 +39,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Project-specific ignores
+
+# Local SQL helper scripts (keep migrations elsewhere)
+create_products_table.sql
+src/scripts/*.sql
+
+# IDE / editor folders
+.vscode/
+.idea/
+*.iml
+
+# Supabase local config (CLI)
+.supabase/
+
+# OS-specific cruft
+Thumbs.db
