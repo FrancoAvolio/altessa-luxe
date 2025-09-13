@@ -19,7 +19,7 @@ export default function Footer() {
       await signIn(email, password);
       setShowAdminLogin(false);
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesiÃ³n');
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -29,7 +29,7 @@ export default function Footer() {
     try {
       await adminSignOut();
     } catch (err: any) {
-      console.error('Error al cerrar sesiÃ³n:', err);
+      console.error('Error al cerrar sesión:', err);
     }
   };
 
@@ -84,7 +84,7 @@ export default function Footer() {
             <div className="mt-3 max-w-sm ml-auto">
               <div className="bg-gray-800 p-4 rounded-lg">
                 <h4 className="text-sm font-semibold mb-3 text-right">
-                  {isAdmin ? 'Panel de AdministraciÃ³n' : 'Inicio de SesiÃ³n'}
+                  {isAdmin ? 'Panel de Administración' : 'Inicio de Sesión'}
                 </h4>
 
                 {isAdmin ? (
@@ -128,7 +128,7 @@ export default function Footer() {
                       disabled={loading}
                       className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? 'Iniciando...' : 'Iniciar SesiÃ³n'}
+                      {loading ? 'Iniciando...' : 'Iniciar Sesión'}
                     </button>
                   </form>
                 )}

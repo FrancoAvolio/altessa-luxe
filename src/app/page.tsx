@@ -162,7 +162,7 @@ export default function Home() {
         {isAdmin && (
           <div id="admin-panel" className="bg-white rounded-lg shadow-md p-6 mb-8 border-2 border-blue-200">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Panel de Administrador</h2>
-            <p className="text-gray-600 mb-4">GestiÃ³n de productos de la tienda</p>
+            <p className="text-gray-600 mb-4">Gestión de productos de la tienda</p>
             <button
               onClick={() => setShowForm(true)}
               className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold cursor-pointer"

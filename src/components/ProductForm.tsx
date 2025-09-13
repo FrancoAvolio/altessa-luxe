@@ -174,14 +174,14 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
             <Input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Nombre del producto" required />
           </div>
           <div className="mb-4">
-            <Label className="mb-1 block">DescripciÃ³n</Label>
+            <Label className="mb-1 block">Descripción</Label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="DescripciÃ³n del producto"
+              placeholder="Descripción del producto"
             />
           </div>
           <div className="mb-4">
@@ -190,7 +190,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
           </div>
 
           <div className="mb-4">
-            <Label className="mb-1 block">ImÃ¡genes del producto</Label>
+            <Label className="mb-1 block">Imágenes del producto</Label>
 
             {existingImages.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-2">

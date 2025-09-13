@@ -2,6 +2,7 @@
 
 import { useAdmin } from '../context/AdminContext';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Navbar() {
   const { user, signOut } = useAdmin();
@@ -18,15 +19,12 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-gray-900 shadow-md z-50 border-b border-gray-700 text-white">
+    <nav className="fixed top-0 left-0 right-0 bg-black shadow-md z-50 border-b border-gray-700 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <div className="w-10 h-10 bg-blue-600 rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-lg">R</span>
-            </div>
-            <span className="ml-3 text-xl font-bold text-white">Relojes</span>
-          </div>
+          <Link href="/" className="flex items-center">
+            <Image src="/altessa-wordmark.svg" alt="ALTESSA logo" width={160} height={40} className="rounded" />
+          </Link>
 
           <div className="flex items-center space-x-4">
             <Link href="/contact" className="text-sm text-gray-300 hover:text-white">Contacto</Link>
@@ -54,6 +52,10 @@ export default function Navbar() {
     </nav>
   );
 }
+
+
+
+
 
 
 

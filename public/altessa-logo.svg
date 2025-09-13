@@ -1,0 +1,14 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title">
+  <title>ALTESSA</title>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F6E27A"/>
+      <stop offset="50%" stop-color="#E8B86D"/>
+      <stop offset="100%" stop-color="#C08A3E"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" fill="#0b0b0b" rx="24"/>
+  <g transform="translate(20,148)">
+    <text x="0" y="0" fill="url(#g)" font-size="72" font-family="serif" font-weight="700" letter-spacing="4">ALTESSA</text>
+  </g>
+</svg>

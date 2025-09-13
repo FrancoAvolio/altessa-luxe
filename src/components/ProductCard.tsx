@@ -58,14 +58,10 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
               ))}
             </div>
             <div className="absolute inset-y-0 left-0 flex items-center">
-              <Button variant="ghost" size="icon" className="bg-black/30 text-white hover:bg-black/40 cursor-pointer" onClick={prev}>
-                â€¹
-              </Button>
+              <Button variant="ghost" size="icon" className="bg-black/40 text-white hover:bg-gray-800 cursor-pointer" onClick={prev}>{"<"}</Button>
             </div>
             <div className="absolute inset-y-0 right-0 flex items-center">
-              <Button variant="ghost" size="icon" className="bg-black/30 text-white hover:bg-black/40 cursor-pointer" onClick={next}>
-                â€º
-              </Button>
+              <Button variant="ghost" size="icon" className="bg-black/40 text-white hover:bg-gray-800 cursor-pointer" onClick={next}>{">"}</Button>
             </div>
           </>
         )}
@@ -86,4 +82,6 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
     </Card>
   );
 }
+
+
 
