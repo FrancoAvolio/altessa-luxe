@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
+import { FaRedhat } from 'react-icons/fa';
 
 export default function Footer() {
   const { isAdmin, signIn, signOut: adminSignOut } = useAdmin();
@@ -34,16 +35,16 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-black-900 text-white mt-16">
+    <footer className="bg-black text-white mt-16 border-t border-gold">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1">
-            <h3 className="text-xl font-bold mb-4">Relojes</h3>
-            <p className="text-gray-300">Tu tienda de confianza para relojes de calidad.</p>
+            <h3 className="text-xl font-bold mb-4 font-fancy text-gold">Relojes</h3>
+            <p className="text-white/80">Tu tienda de confianza para relojes de calidad.</p>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4">Categorías</h4>
-            <ul className="space-y-2 text-gray-300">
+            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">Categorías</h4>
+            <ul className="space-y-2 text-white/80">
               <li>Relojes Deportivos</li>
               <li>Relojes Clásicos</li>
               <li>Relojes Inteligentes</li>
@@ -51,8 +52,8 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4">Atención al Cliente</h4>
-            <ul className="space-y-2 text-gray-300">
+            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">Atención al Cliente</h4>
+            <ul className="space-y-2 text-white/80">
               <li>Compras Seguras</li>
               <li>Garantía</li>
               <li>Envíos Gratuitos</li>
@@ -60,29 +61,27 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4">Siguenos</h4>
-            <div className="flex space-x-4 text-gray-300">
+            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">Síguenos</h4>
+            <div className="flex space-x-4 text-white/80">
               <span>Facebook</span>
               <span>Instagram</span>
               <span>Twitter</span>
             </div>
           </div>
         </div>
-
-        {/* Admin (discreto) */}
-        <div className="mt-8 pt-6 border-t border-gray-800">
+        <div className="mt-8 pt-6 border-t border-gold/40">
           <div className="flex justify-end">
             <button
               onClick={() => setShowAdminLogin(!showAdminLogin)}
-              className="text-xs text-gray-500 hover:text-gray-300 underline underline-offset-2 cursor-pointer"
+              className="text-xs text-gold hover:text-white/80 underline underline-offset-2 cursor-pointer"
             >
-              Administrar
+                 <FaRedhat className="h-6 w-6 cursor-pointer" />
             </button>
           </div>
 
           {showAdminLogin && (
             <div className="mt-3 max-w-sm ml-auto">
-              <div className="bg-gray-800 p-4 rounded-lg">
+              <div className="bg-black p-4 rounded-lg">
                 <h4 className="text-sm font-semibold mb-3 text-right">
                   {isAdmin ? 'Panel de Administración' : 'Inicio de Sesión'}
                 </h4>
@@ -91,7 +90,7 @@ export default function Footer() {
                   <div className="text-right">
                     <button
                       onClick={handleLogout}
-                      className="text-red-400 hover:text-red-300 text-xs cursor-pointer"
+                      className="text-gold hover:text-white text-xs cursor-pointer"
                     >
                       Cerrar sesiÃ³n
                     </button>
@@ -99,34 +98,34 @@ export default function Footer() {
                 ) : (
                   <form onSubmit={handleLogin} className="space-y-3">
                     <div>
-                      <label htmlFor="email" className="block text-xs font-medium text-gray-300 mb-1">Usuario</label>
+                      <label htmlFor="email" className="block text-xs font-medium text-white/80 mb-1">Usuario</label>
                       <input
                         type="text"
                         id="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-black text-white rounded border border-gold focus:outline-none focus:ring-2 focus:ring-[var(--gold)]"
                         placeholder="admin o x"
                         required
                       />
                     </div>
                     <div>
-                      <label htmlFor="password" className="block text-xs font-medium text-gray-300 mb-1">ContraseÃ±a</label>
+                      <label htmlFor="password" className="block text-xs font-medium text-white/80 mb-1">ContraseÃ±a</label>
                       <input
                         type="password"
                         id="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 bg-black text-white rounded border border-gold focus:outline-none focus:ring-2 focus:ring-[var(--gold)]"
                         placeholder="12345"
                         required
                       />
                     </div>
-                    {error && <div className="text-red-400 text-xs text-right">{error}</div>}
+                    {error && <div className="text-gold text-xs text-right">{error}</div>}
                     <button
                       type="submit"
                       disabled={loading}
-                      className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full btn-gold py-2 rounded  cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {loading ? 'Iniciando...' : 'Iniciar Sesión'}
                     </button>
@@ -137,12 +136,16 @@ export default function Footer() {
           )}
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-800 text-center text-gray-400">
+        <div className="mt-8 pt-8 border-t border-gold/40 text-center text-white/70">
           <p>&copy; 2024 Relojes. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>
   );
 }
+
+
+
+
 
 

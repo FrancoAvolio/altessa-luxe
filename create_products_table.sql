@@ -4,5 +4,7 @@ CREATE TABLE IF NOT EXISTS products (
   name text NOT NULL,
   description text,
   price numeric,
-  image_url text
+  image_url text,
+  -- Nueva columna opcional para categorías simples
+  category text
 );

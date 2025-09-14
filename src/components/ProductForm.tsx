@@ -14,21 +14,24 @@ interface Product {
   price: number;
   image_url: string;
   images?: string[];
+  category?: string | null;
 }
 
 interface ProductFormProps {
   product?: Product;
   onSave: (product: Product) => void;
   onCancel: () => void;
+  categories?: string[];
 }
 
-export default function ProductForm({ product, onSave, onCancel }: ProductFormProps) {
+export default function ProductForm({ product, onSave, onCancel, categories }: ProductFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<Product>({
     name: product?.name || '',
     description: product?.description || '',
     price: product?.price || 0,
-    image_url: product?.image_url || ''
+    image_url: product?.image_url || '',
+    category: product?.category ?? ''
   });
 
   const [existingImages, setExistingImages] = useState<string[]>(
@@ -40,6 +43,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
   const [urlInput, setUrlInput] = useState('');
   const [newUrls, setNewUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(categories ?? []);
 
   useEffect(() => {
     if (product) {
@@ -52,12 +56,35 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
         name: product.name || '',
         description: product.description || '',
         price: product.price || 0,
-        image_url: product.image_url || ''
+        image_url: product.image_url || '',
+        category: product.category ?? ''
       });
     } else {
       setExistingImages([]);
     }
   }, [product]);
+
+  // Cargar categorías existentes para sugerencias (datalist)
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('name');
+        if (!error && data) {
+          const set = new Set<string>();
+          (data as any[]).forEach((row) => {
+            const c = (row?.name ?? '').toString().trim();
+            if (c) set.add(c);
+          });
+          setCategoryOptions(Array.from(set).sort((a, b) => a.localeCompare(b)));
+        }
+      } catch (_) {
+        // Ignorar errores de autocompletado
+      }
+    };
+    loadCategories();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -131,6 +158,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
             description: formData.description,
             price: formData.price,
             image_url: finalImages[0] || '',
+            category: (formData.category ?? '').toString().trim() || null,
           })
           .eq('id', pid)
           .select()
@@ -142,7 +170,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
         // Crear producto primero
         const { data: created, error: insErr } = await supabase
           .from('products')
-          .insert([{ name: formData.name, description: formData.description, price: formData.price, image_url: '' }])
+          .insert([{ name: formData.name, description: formData.description, price: formData.price, image_url: '', category: (formData.category ?? '').toString().trim() || null }])
           .select()
           .single();
         if (insErr) throw insErr;
@@ -167,7 +195,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-xl w-full">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">{product ? 'Editar Producto' : 'Crear Producto'}</h2>
+        <h2 className="text-xl font-bold mb-4 text-black">{product ? 'Editar Producto' : 'Crear Producto'}</h2>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <Label className="mb-1 block">Nombre</Label>
@@ -180,9 +208,33 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gold rounded-md text-black focus:outline-none focus:ring-2 focus:ring-[var(--gold)]"
               placeholder="Descripción del producto"
             />
+          </div>
+          <div className="mb-4">
+            <Label className="mb-1 block">Categoría</Label>
+            {categoryOptions.length ? (
+              <select
+                name="category"
+                value={formData.category ?? ''}
+                onChange={(e) => setFormData((p) => ({ ...p, category: e.target.value }))}
+                className="w-full px-3 py-2 border border-gold rounded-md text-black focus:outline-none focus:ring-2 focus:ring-[var(--gold)] bg-white"
+              >
+                <option value="">Sin categoría</option>
+                {categoryOptions.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            ) : (
+              <Input
+                name="category"
+                value={formData.category ?? ''}
+                onChange={handleChange}
+                placeholder="Escribe una categoría"
+              />
+            )}
+            <p className="text-xs text-black/70 mt-1">Selecciona una existente o deja vacío.</p>
           </div>
           <div className="mb-4">
             <Label className="mb-1 block">Precio</Label>
@@ -216,7 +268,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
 
             <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFilesChange} className="hidden" />
             <Button className='cursor-pointer' type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>+ Agregar imágenes</Button>
-            <p className="text-xs text-gray-500 mt-1">Puedes seleccionar varias imÃ¡genes</p>
+            <p className="text-xs text-black/70 mt-1">Puedes seleccionar varias imÃ¡genes</p>
 
             <div className="flex items-center gap-2 mt-3">
               <Input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://ejemplo.com/imagen.jpg" />
@@ -225,7 +277,7 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
             {newUrls.length > 0 && (
               <div className="flex gap-2 flex-wrap mt-2">
                 {newUrls.map((u, i) => (
-                  <span key={i} className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded border">{u}</span>
+                  <span key={i} className="text-xs bg-white text-black px-2 py-1 rounded border">{u}</span>
                 ))}
               </div>
             )}
@@ -240,8 +292,5 @@ export default function ProductForm({ product, onSave, onCancel }: ProductFormPr
     </div>
   );
 }
-
-
-
 
 

@@ -19,7 +19,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 bg-black shadow-md z-50 border-b border-gray-700 text-white">
+    <nav className="fixed top-0 left-0 right-0 bg-black shadow-md z-50 border-b border-gold text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center">
@@ -27,20 +27,20 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center space-x-4">
-            <Link href="/contact" className="text-sm text-gray-300 hover:text-white">Contacto</Link>
+            <Link href="/contact" className="text-sm text-gold font-fancy hover:text-white">Contacto</Link>
             {isLogged ? (
               <>
-                <span className="text-sm text-gray-300">Bienvenido, {user?.email}</span>
+                <span className="text-sm text-gold">Bienvenido, {user?.email}</span>
                 <button
                   onClick={handleViewAsCustomer}
-                  className="text-sm bg-gray-500 hover:bg-blue-700 text-white px-3 py-1 rounded cursor-pointer"
+                  className="text-sm btn-black px-3 py-1 rounded cursor-pointer"
                   title="Cerrar sesión y ver como cliente"
                 >
                   Ver como cliente
                 </button>
                 <button
                   onClick={signOut}
-                  className="text-sm text-gray-300 hover:text-white px-3 py-1 border border-gray-600 rounded hover:border-gray-400 cursor-pointer"
+                  className="text-sm text-gold hover:text-white px-3 py-1 border border-gold rounded hover:border-white cursor-pointer"
                 >
                   Cerrar Sesión
                 </button>

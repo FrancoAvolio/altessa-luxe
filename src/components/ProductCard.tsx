@@ -34,7 +34,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
 
   return (
     <Card className="overflow-hidden relative hover:shadow-xl transition-shadow duration-300">
-      <div className="relative h-48 bg-gray-100">
+      <div className="relative h-48 bg-white">
         {images.length > 0 && !imageError ? (
           <Image
             key={images[index]}
@@ -45,7 +45,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-black/60">
             {imageError ? 'Imagen no disponible' : 'Sin imagen'}
           </div>
         )}
@@ -58,20 +58,20 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
               ))}
             </div>
             <div className="absolute inset-y-0 left-0 flex items-center">
-              <Button variant="ghost" size="icon" className="bg-black/40 text-white hover:bg-gray-800 cursor-pointer" onClick={prev}>{"<"}</Button>
+              <Button variant="ghost" size="icon" className="bg-black/40 text-white hover:bg-black cursor-pointer" onClick={prev}>{"<"}</Button>
             </div>
             <div className="absolute inset-y-0 right-0 flex items-center">
-              <Button variant="ghost" size="icon" className="bg-black/40 text-white hover:bg-gray-800 cursor-pointer" onClick={next}>{">"}</Button>
+              <Button variant="ghost" size="icon" className="bg-black/40 text-white hover:bg-black cursor-pointer" onClick={next}>{">"}</Button>
             </div>
           </>
         )}
       </div>
       <CardContent className="p-4">
-        <h3 className="font-semibold text-lg text-gray-800 mb-2">{product.name}</h3>
+        <h3 className="font-semibold text-lg text-black mb-2">{product.name}</h3>
         {product.description && (
-          <p className="text-gray-600 text-sm mb-2 line-clamp-2">{product.description}</p>
+          <p className="text-black/70 text-sm mb-2 line-clamp-2">{product.description}</p>
         )}
-        <p className="text-xl font-bold text-gray-900">${product.price}</p>
+        <p className="text-xl font-bold text-black">${product.price}</p>
         {isAdmin && (
           <div className="flex space-x-2 mt-2">
             <Button onClick={() => onEdit(product)} className="flex-1 cursor-pointer" variant="secondary">Editar</Button>
@@ -82,6 +82,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
     </Card>
   );
 }
+
 
 
 

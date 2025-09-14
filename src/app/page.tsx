@@ -5,6 +5,8 @@ import { supabase } from '../supabase/supabase';
 import { deleteImage, deleteImages } from '../supabase/storage';
 import ProductCard from '../components/ProductCard';
 import ProductForm from '../components/ProductForm';
+import CategoryForm, { type Category } from '../components/CategoryForm';
+import CategoryManager from '../components/CategoryManager';
 import { useAdmin } from '../context/AdminContext';
 
 interface Product {
@@ -14,6 +16,7 @@ interface Product {
   price: number;
   image_url: string;
   images?: string[];
+  category?: string | null;
 }
 
 export default function Home() {
@@ -25,6 +28,9 @@ export default function Home() {
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 6;
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [categories, setCategories] = useState<string[]>([]);
+  const [showCategoryForm, setShowCategoryForm] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -65,6 +71,19 @@ export default function Home() {
     };
 
     fetchProducts();
+    // Cargar categorías desde tabla categories
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase.from('categories').select('name');
+        if (!error && data) {
+          const arr = (data as any[]).map((r) => (r?.name ?? '').toString().trim()).filter(Boolean);
+          setCategories(Array.from(new Set(arr)).sort((a, b) => a.localeCompare(b)));
+        }
+      } catch (_) {
+        // ignore
+      }
+    };
+    fetchCategories();
   }, []);
 
   const handleCreate = async (product: Product) => {
@@ -131,10 +150,16 @@ export default function Home() {
     setEditingProduct(undefined);
   };
 
+  const handleCategoryCreate = (cat: Category) => {
+    setCategories((prev) => Array.from(new Set([...(prev || []), cat.name])).sort((a, b) => a.localeCompare(b)));
+    setShowCategoryForm(false);
+  };
+
   const totalPages = Math.ceil(products.length / productsPerPage);
+  const filtered = selectedCategory ? products.filter(p => (p.category ?? '') === selectedCategory) : products;
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
+  const currentProducts = filtered.slice(indexOfFirstProduct, indexOfLastProduct);
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
 
@@ -149,81 +174,132 @@ export default function Home() {
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-red-600 text-lg">Error: {error}</div>
+        <div className="text-gold text-lg">Error: {error}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-white p-8">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">Lista de Productos</h1>
+        <h1 className="text-3xl md:text-4xl font-bold text-center mb-8 text-gold font-fancy">Lista de Productos</h1>
 
         {isAdmin && (
-          <div id="admin-panel" className="bg-white rounded-lg shadow-md p-6 mb-8 border-2 border-blue-200">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Panel de Administrador</h2>
-            <p className="text-gray-600 mb-4">Gestión de productos de la tienda</p>
+          <div id="admin-panel" className="bg-white rounded-lg shadow-md p-6 mb-8 border-2 border-gold">
+            <h2 className="text-xl font-bold text-black mb-4 font-fancy text-gold">Panel de Administrador</h2>
+            <p className="text-black mb-4">Gestión de productos de la tienda</p>
             <button
               onClick={() => setShowForm(true)}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-semibold cursor-pointer"
+              className="btn-black px-6 py-3 rounded-lg font-semibold cursor-pointer"
             >
               Agregar Nuevo Producto
             </button>
+            <button
+              onClick={() => setShowCategoryForm(true)}
+              className="ml-3 btn-gold px-6 py-3 rounded-lg font-semibold cursor-pointer"
+            >
+              Agregar Categoría
+            </button>
+            <CategoryManager onChanged={(names) => setCategories(Array.from(new Set(names)).sort((a,b)=>a.localeCompare(b)))} />
           </div>
         )}
 
-        {currentProducts.length === 0 ? (
-          <div className="text-center text-gray-600">No hay productos disponibles.</div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {currentProducts.map(product => (
-                <ProductCard key={product.id} product={product} onEdit={handleEdit} onDelete={handleDelete} />
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-8">
-                <nav className="flex items-center space-x-1">
-                  <button
-                    onClick={() => paginate(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Anterior
-                  </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(number => (
+        {/* Layout con barra lateral de categorías */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <aside className="lg:col-span-1 bg-white rounded-lg shadow p-4 h-fit">
+            <h3 className="font-semibold mb-3 text-black">Categorías</h3>
+            {(() => {
+              const cats = (categories.length
+                ? categories
+                : Array.from(new Set(products.map(p => (p.category ?? '').toString().trim()).filter(Boolean)))
+              ).sort((a, b) => a.localeCompare(b));
+              return (
+                <ul className="space-y-1">
+                  <li>
                     <button
-                      key={number}
-                      onClick={() => paginate(number)}
-                      className={`px-3 py-2 text-sm font-medium rounded-md ${
-                        currentPage === number
-                          ? 'text-white bg-blue-600 cursor-pointer'
-                          : 'text-gray-500 bg-white border border-gray-300 hover:bg-gray-50 cursor-pointer'
-                      }`}
+                      onClick={() => { setSelectedCategory(''); setCurrentPage(1); }}
+                      className={`w-full text-left px-2 py-1 rounded border transition-colors ${selectedCategory === '' ? 'bg-black text-white' : 'bg-white text-black hover:bg-black hover:text-white'}`}
                     >
-                      {number}
+                      Todos ({products.length})
                     </button>
+                  </li>
+                  {cats.map((c) => (
+                    <li key={c}>
+                      <button
+                        onClick={() => { setSelectedCategory(c); setCurrentPage(1); }}
+                        className={`w-full text-left px-2 py-1 rounded border transition-colors ${selectedCategory === c ? 'bg-black text-white' : 'bg-white text-black hover:bg-black hover:text-white'}`}
+                      >
+                        {c} ({products.filter(p => (p.category ?? '') === c).length})
+                      </button>
+                    </li>
                   ))}
-                  <button
-                    onClick={() => paginate(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Siguiente
-                  </button>
-                </nav>
-              </div>
+                </ul>
+              );
+            })()}
+          </aside>
+          <main className="lg:col-span-3">
+            {currentProducts.length === 0 ? (
+              <div className="text-center text-black">No hay productos{selectedCategory ? ` en "${selectedCategory}"` : ''}.</div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {currentProducts.map(product => (
+                    <ProductCard key={product.id} product={product} onEdit={handleEdit} onDelete={handleDelete} />
+                  ))}
+                </div>
+
+                {Math.ceil(filtered.length / productsPerPage) > 1 && (
+                  <div className="flex justify-center mt-8">
+                    <nav className="flex items-center space-x-1">
+                      <button
+                        onClick={() => paginate(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 text-sm font-medium text-black bg-white border border-gold rounded-md hover:bg-black hover:text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Anterior
+                      </button>
+                      {Array.from({ length: Math.ceil(filtered.length / productsPerPage) }, (_, i) => i + 1).map(number => (
+                        <button
+                          key={number}
+                          onClick={() => paginate(number)}
+                          className={`px-3 py-2 text-sm font-medium rounded-md ${
+                            currentPage === number
+                              ? 'text-black bg-gold cursor-pointer'
+                              : 'text-black bg-white border border-gold hover:bg-black hover:text-white cursor-pointer'
+                          }`}
+                        >
+                          {number}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => paginate(currentPage + 1)}
+                        disabled={currentPage === Math.ceil(filtered.length / productsPerPage)}
+                        className="px-3 py-2 text-sm font-medium text-black bg-white border border-gold rounded-md hover:bg-black hover:text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Siguiente
+                      </button>
+                    </nav>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
+          </main>
+        </div>
 
         {showForm && (
-          <ProductForm product={editingProduct} onSave={handleSave} onCancel={handleCancel} />
+          <ProductForm product={editingProduct} onSave={handleSave} onCancel={handleCancel} categories={categories} />
+        )}
+        {showCategoryForm && (
+          <CategoryForm onSave={handleCategoryCreate} onCancel={() => setShowCategoryForm(false)} />
         )}
       </div>
     </div>
   );
 }
+
+
+
+
+
 
 

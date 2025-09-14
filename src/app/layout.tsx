@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Red_Hat_Text } from "next/font/google";
+import { Red_Hat_Text, Cinzel } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -9,6 +9,13 @@ const redHat = Red_Hat_Text({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-redhat",
+  display: "swap",
+});
+
+const fancy = Cinzel({
+  subsets: ["latin"],
+  weight: ["400", "700", "900"],
+  variable: "--font-fancy",
   display: "swap",
 });
 
@@ -24,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${redHat.className} antialiased bg-gray-100`}>
+      <body className={`${redHat.className} ${fancy.variable} antialiased bg-white`}>
         <AdminProvider>
           <Navbar />
           <div className="pt-16"> {/* Padding top for fixed navbar */}
