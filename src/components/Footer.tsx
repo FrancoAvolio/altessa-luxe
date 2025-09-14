@@ -137,7 +137,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-8 pt-8 border-t border-gold/40 text-center text-white/70">
-          <p>&copy; 2024 Relojes. Todos los derechos reservados.</p>
+          <p>&copy; 2025 ALTESSA. Todos los derechos reservados.</p>
         </div>
       </div>
     </footer>
