@@ -27,9 +27,10 @@ export default function Home() {
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 6;
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const productsPerPage = 12;
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [catRefresh, setCatRefresh] = useState(0);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
 
   useEffect(() => {
@@ -84,6 +85,26 @@ export default function Home() {
       }
     };
     fetchCategories();
+
+    // Suscripción Realtime: refleja INSERT/UPDATE/DELETE en `categories`
+    const channel = supabase
+      .channel('categories-listener')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, async () => {
+        try {
+          const { data, error } = await supabase.from('categories').select('name');
+          if (!error && data) {
+            const arr = (data as any[]).map((r) => (r?.name ?? '').toString().trim()).filter(Boolean);
+            setCategories(Array.from(new Set(arr)).sort((a, b) => a.localeCompare(b)));
+          }
+        } catch (_) {
+          // noop
+        }
+      })
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch { /* noop */ }
+    };
   }, []);
 
   const handleCreate = async (product: Product) => {
@@ -152,11 +173,14 @@ export default function Home() {
 
   const handleCategoryCreate = (cat: Category) => {
     setCategories((prev) => Array.from(new Set([...(prev || []), cat.name])).sort((a, b) => a.localeCompare(b)));
+    setCatRefresh((v) => v + 1);
     setShowCategoryForm(false);
   };
 
   const totalPages = Math.ceil(products.length / productsPerPage);
-  const filtered = selectedCategory ? products.filter(p => (p.category ?? '') === selectedCategory) : products;
+  const filtered = selectedCategories.length
+    ? products.filter(p => selectedCategories.includes((p.category ?? '').toString()))
+    : products;
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filtered.slice(indexOfFirstProduct, indexOfLastProduct);
@@ -209,16 +233,21 @@ export default function Home() {
           <aside className="lg:col-span-1 bg-white rounded-lg shadow p-4 h-fit">
             <h3 className="font-semibold mb-3 text-black">Categorías</h3>
             {(() => {
-              const cats = (categories.length
-                ? categories
-                : Array.from(new Set(products.map(p => (p.category ?? '').toString().trim()).filter(Boolean)))
-              ).sort((a, b) => a.localeCompare(b));
+              // Mostrar SOLO categorías que tengan al menos un producto
+              const usedSet = new Set<string>();
+              products.forEach((p) => {
+                const c = (p.category ?? '').toString().trim();
+                if (c) usedSet.add(c);
+              });
+              const inferred = Array.from(usedSet);
+              const cats = (categories.length ? categories.filter((c) => usedSet.has(c)) : inferred)
+                .sort((a, b) => a.localeCompare(b));
               return (
                 <ul className="space-y-1">
                   <li>
                     <button
-                      onClick={() => { setSelectedCategory(''); setCurrentPage(1); }}
-                      className={`w-full text-left px-2 py-1 rounded border transition-colors ${selectedCategory === '' ? 'bg-black text-white' : 'bg-white text-black hover:bg-black hover:text-white'}`}
+                      onClick={() => { setSelectedCategories([]); setCurrentPage(1); }}
+                      className={`w-full text-left px-2 py-1 rounded border transition-colors ${selectedCategories.length === 0 ? 'bg-black text-white' : 'bg-white text-black hover:bg-black hover:text-white'}`}
                     >
                       Todos ({products.length})
                     </button>
@@ -226,8 +255,14 @@ export default function Home() {
                   {cats.map((c) => (
                     <li key={c}>
                       <button
-                        onClick={() => { setSelectedCategory(c); setCurrentPage(1); }}
-                        className={`w-full text-left px-2 py-1 rounded border transition-colors ${selectedCategory === c ? 'bg-black text-white' : 'bg-white text-black hover:bg-black hover:text-white'}`}
+                        onClick={() => {
+                          setSelectedCategories((prev) => {
+                            const exists = prev.includes(c);
+                            return exists ? prev.filter((x) => x !== c) : [...prev, c];
+                          });
+                          setCurrentPage(1);
+                        }}
+                        className={`w-full text-left px-2 py-1 rounded border transition-colors ${selectedCategories.includes(c) ? 'bg-black text-white' : 'bg-white text-black hover:bg-black hover:text-white'}`}
                       >
                         {c} ({products.filter(p => (p.category ?? '') === c).length})
                       </button>
@@ -239,7 +274,7 @@ export default function Home() {
           </aside>
           <main className="lg:col-span-3">
             {currentProducts.length === 0 ? (
-              <div className="text-center text-black">No hay productos{selectedCategory ? ` en "${selectedCategory}"` : ''}.</div>
+              <div className="text-center text-black">No hay productos{selectedCategories.length ? ` en ${selectedCategories.join(', ')}` : ''}.</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -296,6 +331,7 @@ export default function Home() {
     </div>
   );
 }
+
 
 
 

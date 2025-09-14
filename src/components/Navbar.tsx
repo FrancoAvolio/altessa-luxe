@@ -14,7 +14,7 @@ export default function Navbar() {
       // No hace falta recargar: el estado se actualiza y oculta acciones de admin
       // Si querÃ©s forzar recarga descomentÃ¡: window.location.reload();
     } catch (err) {
-      console.error('Error al cerrar sesiÃ³n:', err);
+      console.error('Error al cerrar sesión:', err);
     }
   };
 

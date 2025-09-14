@@ -39,7 +39,7 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
   );
   const [removedImages, setRemovedImages] = useState<string[]>([]);
   const [newFiles, setNewFiles] = useState<File[]>([]);
-  const [newPreviews, setNewPreviews] = useState<string[]>([]);
+  const [newPreviews, setNewPreviews] = useState<{ src: string; type: 'image' | 'video'; }[]>([]);
   const [urlInput, setUrlInput] = useState('');
   const [newUrls, setNewUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -95,12 +95,12 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
     const files = Array.from(e.target.files || []);
     if (files.length) {
       setNewFiles(prev => [...prev, ...files]);
-      const readers = files.map(f => new Promise<string>((resolve) => {
+      const readers = files.map(f => new Promise<{ src: string; type: 'image' | 'video'; }>((resolve) => {
         const r = new FileReader();
-        r.onload = () => resolve(r.result as string);
+        r.onload = () => resolve({ src: r.result as string, type: (f.type || '').startsWith('video') ? 'video' : 'image' });
         r.readAsDataURL(f);
       }));
-      Promise.all(readers).then(imgs => setNewPreviews(prev => [...prev, ...imgs]));
+      Promise.all(readers).then(previews => setNewPreviews(prev => [...prev, ...previews]));
     }
   };
 
@@ -242,33 +242,44 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
           </div>
 
           <div className="mb-4">
-            <Label className="mb-1 block">Imágenes del producto</Label>
+            <Label className="mb-1 block">Imágenes/Videos del producto</Label>
 
             {existingImages.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-2">
-                {existingImages.map((url) => (
-                  <div key={url} className="relative group">
-                    <img src={url} alt="img" className="w-full h-24 object-cover rounded border" />
-                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => removeExistingImage(url)} title="Eliminar">âœ•</Button>
-                  </div>
-                ))}
+                {existingImages.map((url) => {
+                  const isVid = /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url);
+                  return (
+                    <div key={url} className="relative group">
+                      {isVid ? (
+                        <div className="w-full h-24 rounded border bg-black/80 text-white flex items-center justify-center">Video</div>
+                      ) : (
+                        <img src={url} alt="img" className="w-full h-24 object-cover rounded border" />
+                      )}
+                      <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => removeExistingImage(url)} title="Eliminar">×</Button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {newPreviews.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-2">
-                {newPreviews.map((src, idx) => (
+                {newPreviews.map((p, idx) => (
                   <div key={idx} className="relative group">
-                    <img src={src} alt="new" className="w-full h-24 object-cover rounded border" />
-                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => removeNewFile(idx)} title="Quitar">âœ•</Button>
+                    {p.type === 'video' ? (
+                      <div className="w-full h-24 rounded border bg-black/80 text-white flex items-center justify-center">Video</div>
+                    ) : (
+                      <img src={p.src} alt="new" className="w-full h-24 object-cover rounded border" />
+                    )}
+                    <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => removeNewFile(idx)} title="Quitar">×</Button>
                   </div>
                 ))}
               </div>
             )}
 
-            <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={handleFilesChange} className="hidden" />
-            <Button className='cursor-pointer' type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>+ Agregar imágenes</Button>
-            <p className="text-xs text-black/70 mt-1">Puedes seleccionar varias imÃ¡genes</p>
+            <input ref={fileInputRef} type="file" accept="image/*,video/*" multiple onChange={handleFilesChange} className="hidden" />
+            <Button className='cursor-pointer' type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>+ Agregar imágenes/videos</Button>
+            <p className="text-xs text-black/70 mt-1">Puedes seleccionar varias imágenes/videos (hasta 50MB por archivo)</p>
 
             <div className="flex items-center gap-2 mt-3">
               <Input type="url" value={urlInput} onChange={(e) => setUrlInput(e.target.value)} placeholder="https://ejemplo.com/imagen.jpg" />

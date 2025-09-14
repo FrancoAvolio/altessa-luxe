@@ -53,8 +53,23 @@ export function AdminProvider({ children }: AdminProviderProps) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      // Intento sign out global; si no hay sesión, no debe romper el flujo
+      const { error } = await supabase.auth.signOut({ /* @ts-ignore */ scope: 'global' as any });
+      if (error && !String(error.message).toLowerCase().includes('auth session missing')) {
+        throw error;
+      }
+    } catch (err: any) {
+      const msg = String(err?.message || '').toLowerCase();
+      if (!msg.includes('auth session missing')) {
+        // Fallback: limpiar token local por si quedó huérfano
+        try { await supabase.auth.signOut({ /* @ts-ignore */ scope: 'local' as any }); } catch {}
+        throw err;
+      }
+    } finally {
+      // Asegurar estado local consistente
+      setUser(null);
+    }
   };
 
   const signUp = async (email: string, password: string) => {

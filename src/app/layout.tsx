@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { AdminProvider } from "../context/AdminContext";
+import WhatsAppFloating from "../components/WhatsAppFloating";
 
 const redHat = Red_Hat_Text({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({
           <div className="pt-16"> {/* Padding top for fixed navbar */}
             {children}
           </div>
+          <WhatsAppFloating />
           <Footer />
         </AdminProvider>
       </body>

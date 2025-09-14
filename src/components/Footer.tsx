@@ -92,7 +92,7 @@ export default function Footer() {
                       onClick={handleLogout}
                       className="text-gold hover:text-white text-xs cursor-pointer"
                     >
-                      Cerrar sesiÃ³n
+                      Cerrar sesión
                     </button>
                   </div>
                 ) : (
@@ -117,7 +117,7 @@ export default function Footer() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full px-3 py-2 bg-black text-white rounded border border-gold focus:outline-none focus:ring-2 focus:ring-[var(--gold)]"
-                        placeholder="12345"
+                        placeholder="Contraseña"
                         required
                       />
                     </div>

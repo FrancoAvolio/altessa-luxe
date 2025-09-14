@@ -14,7 +14,9 @@ interface Props {
   onChanged?: (names: string[]) => void; // notifica a la pÃ¡gina para refrescar el select/filtro
 }
 
-export default function CategoryManager({ onChanged }: Props) {
+type CategoryManagerProps = { onChanged?: (names: string[]) => void; refreshToken?: number | string };
+
+export default function CategoryManager({ onChanged, refreshToken }: CategoryManagerProps) {
   const [items, setItems] = useState<CategoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -36,7 +38,25 @@ export default function CategoryManager({ onChanged }: Props) {
 
   useEffect(() => {
     load();
+    // Suscripción en tiempo real para reflejar inserts/updates/deletes sin refrescar
+    const channel = supabase
+      .channel('categories-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        load();
+      })
+      .subscribe();
+
+    return () => {
+      try { supabase.removeChannel(channel); } catch (_) {}
+    };
   }, []);
+
+  // Forzar recarga cuando cambie el token desde el padre (p. ej., al crear una categoría)
+  useEffect(() => {
+    if (refreshToken !== undefined) {
+      load();
+    }
+  }, [refreshToken]);
 
   const beginEdit = (row: CategoryRow) => {
     setEditingId(row.id);
@@ -81,7 +101,7 @@ export default function CategoryManager({ onChanged }: Props) {
   };
 
   const remove = async (row: CategoryRow) => {
-    if (!confirm(`Eliminar la categorÃ­a "${row.name}"? Los productos quedarÃ¡n sin categorÃ­a.`)) return;
+    if (!confirm(`Eliminar la categoría "${row.name}"? Los productos quedarán sin categoría.`)) return;
     setLoading(true);
     try {
       // Primero limpia productos
@@ -109,10 +129,10 @@ export default function CategoryManager({ onChanged }: Props) {
 
   return (
     <div className="mt-4">
-      <h3 className="font-semibold mb-2 text-black">Gestionar categorÃ­as</h3>
-      <div className="border rounded-md divide-y bg-white border border-gold">
+      <h3 className="font-semibold mb-2 text-black">Gestionar categorías</h3>
+      <div className="border rounded-md divide-y bg-white border border-black text-black">
         {items.length === 0 && (
-          <div className="px-3 py-2 text-sm text-black/70">No hay categorÃ­as aÃºn.</div>
+          <div className="px-3 py-2 text-sm text-black/70">No hay categorís aún.</div>
         )}
         {items.map((row) => (
           <div key={row.id} className="flex items-center gap-2 px-3 py-2">
@@ -135,5 +155,6 @@ export default function CategoryManager({ onChanged }: Props) {
     </div>
   );
 }
+
 
 
