@@ -1,4 +1,4 @@
-// Supabase Auth utilities
+﻿// Supabase Auth utilities
 import { supabase } from './supabase';
 import type { User, Session } from '@supabase/supabase-js';
 
@@ -147,7 +147,10 @@ export function onAuthStateChange(
 // Helper functions for role-based access
 export async function isAdmin(): Promise<boolean> {
   const user = await getCurrentUser();
-  return user?.user_metadata?.role === 'admin' || user?.email === 'admin@relojes.com';
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!user) return false;
+  if (user.user_metadata?.role === 'admin') return true;
+  return adminEmail ? user.email === adminEmail : false;
 }
 
 export async function requireAdmin(): Promise<boolean> {
@@ -161,15 +164,6 @@ export async function requireAdmin(): Promise<boolean> {
 
 // Mock function to create admin user
 export async function createMockAdmin() {
-  // This would typically be done in a seed script or manually
-  console.log('To create admin user, run in browser console:');
-  console.log(`
-    supabase.auth.signUp({
-      email: 'admin@relojes.com',
-      password: '12345',
-      options: {
-        data: { role: 'admin', name: 'Administrator' }
-      }
-    })
-  `);
+  console.log('Define ADMIN_EMAIL and ADMIN_PASSWORD in your environment before seeding admin users.');
+  console.log('You can then run a secure seed script (see src/scripts/createAdminUser.ts) or create the user from Supabase Auth > Users.');
 }

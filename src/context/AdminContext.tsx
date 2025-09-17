@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../supabase/supabase';
@@ -34,7 +34,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null);
       setIsLoading(false);
     });
@@ -42,7 +42,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const isAdmin = user?.user_metadata?.role === process.env.NEXT_PUBLIC_ADMIN_ROLE || user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL
+  const isAdmin = user?.user_metadata?.role === process.env.NEXT_PUBLIC_ADMIN_ROLE;
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -78,7 +78,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
       password,
       options: {
         data: {
-          role: email.includes('admin') ? 'admin' : 'user',
+          role: 'user',
         },
       },
     });
