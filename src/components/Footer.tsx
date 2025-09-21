@@ -1,27 +1,27 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAdmin } from '../context/AdminContext';
-import { FaRedhat, FaInstagram } from 'react-icons/fa';
-import Link from 'next/link';
+import { useState } from "react";
+import { useAdmin } from "../context/AdminContext";
+import { FaRedhat, FaInstagram } from "react-icons/fa";
+import Link from "next/link";
 
 export default function Footer() {
   const { isAdmin, signIn, signOut: adminSignOut } = useAdmin();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    setError("");
     try {
       await signIn(email, password);
       setShowAdminLogin(false);
     } catch (err: any) {
-      setError(err.message || 'Error al iniciar sesión');
+      setError(err.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
     }
@@ -31,7 +31,7 @@ export default function Footer() {
     try {
       await adminSignOut();
     } catch (err: any) {
-      console.error('Error al cerrar sesión:', err);
+      console.error("Error al cerrar sesión:", err);
     }
   };
 
@@ -40,11 +40,17 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1">
-            <h3 className="text-xl font-bold mb-4 font-fancy text-gold">Relojes</h3>
-            <p className="text-white/80">Tu tienda de confianza para relojes de calidad.</p>
+            <h3 className="text-xl font-bold mb-4 font-fancy text-gold">
+              Relojes
+            </h3>
+            <p className="text-white/80">
+              Tu tienda de confianza para relojes de calidad.
+            </p>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">Categorías</h4>
+            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">
+              Categorías
+            </h4>
             <ul className="space-y-2 text-white/80">
               <li>Relojes Deportivos</li>
               <li>Relojes Clásicos</li>
@@ -53,7 +59,9 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">Atención al Cliente</h4>
+            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">
+              Atención al Cliente
+            </h4>
             <ul className="space-y-2 text-white/80">
               <li>Compras Seguras</li>
               <li>Garantía</li>
@@ -62,9 +70,16 @@ export default function Footer() {
             </ul>
           </div>
           <div>
-            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">Síguenos</h4>
+            <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">
+              Síguenos
+            </h4>
             <div className="flex space-x-4 text-white/80">
-              <Link href='https://www.instagram.com/altessaluxe/' target='_blank'><FaInstagram className="h-6 w-6 cursor-pointer text-gold hover:text-white/80 underline underline-offset-2" /></Link>
+              <Link
+                href="https://www.instagram.com/altessaluxe/"
+                target="_blank"
+              >
+                <FaInstagram className="h-6 w-6 cursor-pointer text-gold hover:text-white/80 underline underline-offset-2" />
+              </Link>
             </div>
           </div>
         </div>
@@ -74,7 +89,7 @@ export default function Footer() {
               onClick={() => setShowAdminLogin(!showAdminLogin)}
               className="text-xs text-gold hover:text-white/80 underline underline-offset-2 cursor-pointer"
             >
-                 <FaRedhat className="h-6 w-6 cursor-pointer" />
+              <FaRedhat className="h-6 w-6 cursor-pointer" />
             </button>
           </div>
 
@@ -82,7 +97,7 @@ export default function Footer() {
             <div className="mt-3 max-w-sm ml-auto">
               <div className="bg-black p-4 rounded-lg">
                 <h4 className="text-sm font-semibold mb-3 text-right">
-                  {isAdmin ? 'Panel de Administración' : 'Inicio de Sesión'}
+                  {isAdmin ? "Panel de Administración" : "Inicio de Sesión"}
                 </h4>
 
                 {isAdmin ? (
@@ -97,7 +112,12 @@ export default function Footer() {
                 ) : (
                   <form onSubmit={handleLogin} className="space-y-3">
                     <div>
-                      <label htmlFor="email" className="block text-xs font-medium text-white/80 mb-1">Usuario</label>
+                      <label
+                        htmlFor="email"
+                        className="block text-xs font-medium text-white/80 mb-1"
+                      >
+                        Usuario
+                      </label>
                       <input
                         type="text"
                         id="email"
@@ -109,7 +129,12 @@ export default function Footer() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="password" className="block text-xs font-medium text-white/80 mb-1">Contraseña</label>
+                      <label
+                        htmlFor="password"
+                        className="block text-xs font-medium text-white/80 mb-1"
+                      >
+                        Contraseña
+                      </label>
                       <input
                         type="password"
                         id="password"
@@ -120,13 +145,17 @@ export default function Footer() {
                         required
                       />
                     </div>
-                    {error && <div className="text-gold text-xs text-right">{error}</div>}
+                    {error && (
+                      <div className="text-gold text-xs text-right">
+                        {error}
+                      </div>
+                    )}
                     <button
                       type="submit"
                       disabled={loading}
                       className="w-full btn-gold py-2 rounded  cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? 'Iniciando...' : 'Iniciar Sesión'}
+                      {loading ? "Iniciando..." : "Iniciar Sesión"}
                     </button>
                   </form>
                 )}
@@ -137,23 +166,19 @@ export default function Footer() {
 
         <div className="mt-8 pt-8 border-t border-gold/40 text-center text-white/70">
           <p>&copy; 2025 ALTESSA. Todos los derechos reservados.</p>
-          <p>Desarrollado por</p>
-          <Link
+          <p className="flex justify-center items-center gap-1">
+            Desarrollado por
+            <Link
               href="https://www.nehros.com"
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-1 hover:underline text-[#9747FF] font-medium"
+              className="hover:underline text-[#9747FF] font-medium"
             >
               Nehros
             </Link>
+          </p>
         </div>
       </div>
     </footer>
   );
 }
-
-
-
-
-
-
