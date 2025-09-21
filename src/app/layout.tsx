@@ -6,6 +6,8 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { AdminProvider } from "../context/AdminContext";
 import WhatsAppFloating from "../components/WhatsAppFloating";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "../context/ThemeContext";
 
 const redHat = Red_Hat_Text({
@@ -33,9 +35,12 @@ const siteMetadataBase = (() => {
   }
 })();
 
-const defaultDescription = "Altessa Luxe ofrece relojes de lujo, colecciones exclusivas y asesoramiento personalizado en Argentina.";
+const defaultDescription =
+  "Altessa Luxe ofrece relojes de lujo, colecciones exclusivas y asesoramiento personalizado en Argentina.";
 const contactPhoneRaw = process.env.NEXT_PUBLIC_WHATSAPP_PHONE ?? "";
-const contactPhone = contactPhoneRaw.replace(/[^0-9+]/g, "").replace(/^[+]?/, "");
+const contactPhone = contactPhoneRaw
+  .replace(/[^0-9+]/g, "")
+  .replace(/^[+]?/, "");
 const altessaLogoPng = "/altessa-logo.png";
 const altessaLogoSvg = "/altessa-logo.svg";
 
@@ -156,13 +161,18 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: organizationJsonLd }}
         />
       </head>
-      <body suppressHydrationWarning className={`${redHat.className} ${fancy.variable} antialiased`}>
+      <body
+        suppressHydrationWarning
+        className={`${redHat.className} ${fancy.variable} antialiased`}
+      >
         <ThemeProvider>
           <AdminProvider>
             <Navbar />
             <div className="pt-16">{children}</div>
             <WhatsAppFloating />
             <Footer />
+            <SpeedInsights />
+            <Analytics />
           </AdminProvider>
         </ThemeProvider>
       </body>
