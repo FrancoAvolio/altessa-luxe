@@ -111,7 +111,7 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
       backgroundSize: `${bgW}px ${bgH}px`,
       backgroundPosition: `-${posX}px -${posY}px`,
     } as React.CSSProperties;
-  }, [src, lensPos, renderedSize]);
+  }, [src, lensPos, renderedSize, containerSize]);
 
   const updateNaturalSize = (width: number, height: number) => {
     if (width && height) {

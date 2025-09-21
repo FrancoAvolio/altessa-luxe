@@ -6,7 +6,7 @@ const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // Crear cliente admin para operaciones avanzadas
 const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
 
-async function deleteAndRecreateBucket() {
+export async function deleteAndRecreateBucket() {
   console.log('🔧 Recreando bucket products-images completamente...\n');
 
   try {
@@ -90,7 +90,7 @@ async function deleteAndRecreateBucket() {
 }
 
 // Función principal que será ejecutada
-async function main() {
+export async function main() {
   console.log('🔧 SOLUCIÓN AUTOMÁTICA PARA RLS ERROR\n');
 
   try {
@@ -98,6 +98,10 @@ async function main() {
     console.log('📦 Intentando crear bucket usando cliente Supabase...\n');
 
     const { data: buckets, error: listError } = await adminSupabase.storage.listBuckets();
+    if (listError) {
+      console.error('Error listing buckets:', listError.message);
+      return;
+    }
     const existingBucket = buckets?.find(b => b.name === 'products-images');
 
     if (existingBucket) {
@@ -113,7 +117,7 @@ async function main() {
     }
 
     // Try to create bucket
-    const { data: createData, error: createError } = await adminSupabase.storage.createBucket('products-images', {
+    const { error: createError } = await adminSupabase.storage.createBucket('products-images', {
       public: true,
       allowedMimeTypes: ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'],
       fileSizeLimit: 5242880, // 5MB

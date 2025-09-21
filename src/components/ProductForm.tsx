@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase/supabase';
 import { uploadImages, deleteImage } from '../supabase/storage';
@@ -16,6 +17,15 @@ interface Product {
   images?: string[];
   category?: string | null;
 }
+
+type DbProductRow = {
+  id: number;
+  name: string;
+  description: string | null;
+  price: number | null;
+  image_url: string | null;
+  category: string | null;
+};
 
 interface ProductFormProps {
   product?: Product;
@@ -72,14 +82,15 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
           .from('categories')
           .select('name');
         if (!error && data) {
+          const rows = (data ?? []) as Array<{ name: string | null }>;
           const set = new Set<string>();
-          (data as any[]).forEach((row) => {
+          rows.forEach((row) => {
             const c = (row?.name ?? '').toString().trim();
             if (c) set.add(c);
           });
           setCategoryOptions(Array.from(set).sort((a, b) => a.localeCompare(b)));
         }
-      } catch (_) {
+      } catch {
         // Ignorar errores de autocompletado
       }
     };
@@ -125,6 +136,7 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
       const uploadedUrls = await uploadImages(newFiles);
       const remainingExisting = existingImages;
       const finalImages = [...remainingExisting, ...uploadedUrls, ...newUrls];
+      const normalizedCategory = (formData.category ?? '').toString().trim() || null;
 
       if (product?.id) {
         const pid = product.id;
@@ -158,31 +170,60 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
             description: formData.description,
             price: formData.price,
             image_url: finalImages[0] || '',
-            category: (formData.category ?? '').toString().trim() || null,
+            category: normalizedCategory,
           })
           .eq('id', pid)
           .select()
           .single();
         if (upErr) throw upErr;
 
-        onSave({ ...(updated as any), images: finalImages });
+        const updatedRow = (updated ?? null) as DbProductRow | null;
+        if (!updatedRow) {
+          throw new Error('No se pudo obtener el producto actualizado');
+        }
+
+        const normalized: Product = {
+          id: updatedRow.id,
+          name: updatedRow.name ?? formData.name,
+          description: updatedRow.description ?? '',
+          price: typeof updatedRow.price === 'number' ? updatedRow.price : formData.price,
+          image_url: finalImages[0] ?? updatedRow.image_url ?? '',
+          images: finalImages,
+          category: updatedRow.category ?? normalizedCategory,
+        };
+
+        onSave(normalized);
       } else {
         // Crear producto primero
         const { data: created, error: insErr } = await supabase
           .from('products')
-          .insert([{ name: formData.name, description: formData.description, price: formData.price, image_url: '', category: (formData.category ?? '').toString().trim() || null }])
+          .insert([{ name: formData.name, description: formData.description, price: formData.price, image_url: '', category: normalizedCategory }])
           .select()
           .single();
         if (insErr) throw insErr;
-        const pid = created.id as number;
+        const createdRow = (created ?? null) as DbProductRow | null;
+        if (!createdRow) {
+          throw new Error('No se pudo crear el producto');
+        }
+        const pid = createdRow.id;
 
         const toInsert = [...uploadedUrls, ...newUrls].map((url, idx) => ({ product_id: pid, url, position: idx }));
         if (toInsert.length) await supabase.from('product_images').insert(toInsert);
 
-        const cover = toInsert[0]?.url || '';
+        const cover = toInsert[0]?.url || finalImages[0] || '';
         if (cover) await supabase.from('products').update({ image_url: cover }).eq('id', pid);
 
-        onSave({ ...(created as any), image_url: cover, images: toInsert.map(t => t.url) });
+        const normalized: Product = {
+          id: pid,
+          name: createdRow.name ?? formData.name,
+          description: createdRow.description ?? '',
+          price: typeof createdRow.price === 'number' ? createdRow.price : formData.price,
+          image_url: cover || createdRow.image_url || '',
+          images: finalImages.length ? finalImages : toInsert.map((t) => t.url),
+          category: createdRow.category ?? normalizedCategory,
+        };
+
+        onSave(normalized);
       }
     } catch (err) {
       console.error(err);
@@ -252,7 +293,16 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
                       {isVid ? (
                         <div className="w-full h-24 rounded border bg-black/80 text-white flex items-center justify-center">Video</div>
                       ) : (
-                        <img src={url} alt="img" className="w-full h-24 object-cover rounded border" />
+                        <div className="relative w-full h-24 rounded border overflow-hidden">
+            <Image
+              src={url}
+              alt="Imagen existente"
+              fill
+              className="object-cover"
+              sizes="96px"
+              unoptimized
+            />
+          </div>
                       )}
                       <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => removeExistingImage(url)} title="Eliminar">×</Button>
                     </div>
@@ -268,7 +318,16 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
                     {p.type === 'video' ? (
                       <div className="w-full h-24 rounded border bg-black/80 text-white flex items-center justify-center">Video</div>
                     ) : (
-                      <img src={p.src} alt="new" className="w-full h-24 object-cover rounded border" />
+                      <div className="relative w-full h-24 rounded border overflow-hidden">
+            <Image
+              src={p.src}
+              alt={`Nuevo archivo ${idx + 1}`}
+              fill
+              className="object-cover"
+              sizes="96px"
+              unoptimized
+            />
+          </div>
                     )}
                     <Button type="button" size="icon" variant="destructive" className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 cursor-pointer" onClick={() => removeNewFile(idx)} title="Quitar">×</Button>
                   </div>

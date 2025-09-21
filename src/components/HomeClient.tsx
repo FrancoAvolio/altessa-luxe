@@ -129,8 +129,13 @@ export default function HomeClient({ initialProducts, initialCategories, initial
         .select('url, position')
         .eq('product_id', product.id)
         .order('position', { ascending: true });
-      if (imgs && imgs.length) {
-        finalImages = imgs.map((i: any) => i.url);
+      if (Array.isArray(imgs) && imgs.length) {
+        const urls = imgs
+          .map((row) => row?.url)
+          .filter((url): url is string => typeof url === 'string' && url.length > 0);
+        if (urls.length) {
+          finalImages = urls;
+        }
       }
     }
     setProducts((prev) => [...prev, { ...product, images: finalImages }]);

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../supabase/supabase';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -8,10 +8,6 @@ import { Input } from './ui/input';
 export interface CategoryRow {
   id: number;
   name: string;
-}
-
-interface Props {
-  onChanged?: (names: string[]) => void; // notifica a la pÃ¡gina para refrescar el select/filtro
 }
 
 type CategoryManagerProps = { onChanged?: (names: string[]) => void; refreshToken?: number | string };
@@ -22,19 +18,19 @@ export default function CategoryManager({ onChanged, refreshToken }: CategoryMan
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase.from('categories').select('id, name').order('name');
       if (!error && data) {
-        const arr = data as { id: number; name: string }[];
+        const arr = (data ?? []) as Array<{ id: number; name: string }>;
         setItems(arr);
         onChanged?.(arr.map((c) => c.name));
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [onChanged]);
 
   useEffect(() => {
     load();
@@ -47,16 +43,16 @@ export default function CategoryManager({ onChanged, refreshToken }: CategoryMan
       .subscribe();
 
     return () => {
-      try { supabase.removeChannel(channel); } catch (_) {}
+      try { supabase.removeChannel(channel); } catch { /* ignore */ }
     };
-  }, []);
+  }, [load]);
 
   // Forzar recarga cuando cambie el token desde el padre (p. ej., al crear una categoría)
   useEffect(() => {
     if (refreshToken !== undefined) {
       load();
     }
-  }, [refreshToken]);
+  }, [refreshToken, load]);
 
   const beginEdit = (row: CategoryRow) => {
     setEditingId(row.id);

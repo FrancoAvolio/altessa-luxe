@@ -33,7 +33,13 @@ type PageProps = {
   params: ParamsInput;
 };
 
+function isPromiseLike(value: ParamsInput): value is Promise<{ id: string }> {
+  return typeof value === "object" && value !== null && "then" in value && typeof (value as PromiseLike<unknown>).then === "function";
+}
 
+function toParamsPromise(value: ParamsInput): Promise<{ id: string }> {
+  return isPromiseLike(value) ? value : Promise.resolve(value);
+}
 
 function ProductDetailSkeleton() {
   return (
@@ -77,11 +83,7 @@ function ProductDetailSkeleton() {
 
 
 export default function ProductDetailPage({ params }: PageProps) {
-  const resolvedParams = use(
-    typeof (params as any)?.then === "function"
-      ? (params as Promise<{ id: string }>)
-      : Promise.resolve(params as { id: string })
-  );
+  const resolvedParams = use(toParamsPromise(params));
   const id = Number(resolvedParams.id);
   const router = useRouter();
   const [loading, setLoading] = useState(true);

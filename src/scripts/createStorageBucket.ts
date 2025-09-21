@@ -15,7 +15,7 @@ async function createBucket() {
         console.log('✅ Bucket already exists!');
 
         // Update bucket to make sure it's public
-        const { data: updateData, error: updateError } = await supabase.storage.updateBucket('products-images', {
+        const { error: updateError } = await supabase.storage.updateBucket('products-images', {
           public: true,
           allowedMimeTypes: ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'],
           fileSizeLimit: 5242880,

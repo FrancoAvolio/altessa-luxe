@@ -20,6 +20,15 @@ type CategoriesResponse = {
   error?: string;
 };
 
+type DbProductRow = {
+  id: number | null;
+  name: string | null;
+  description: string | null;
+  price: number | null;
+  image_url: string | null;
+  category: string | null;
+};
+
 export async function fetchProductsWithImages(): Promise<ProductsResponse> {
   try {
     const { data: base, error } = await supabase.from('products').select('*');
@@ -28,7 +37,7 @@ export async function fetchProductsWithImages(): Promise<ProductsResponse> {
       return { items: [], error: error.message };
     }
 
-    const products = (base ?? []) as Record<string, any>[];
+    const products = (base ?? []) as DbProductRow[];
     const ids = products.map((p) => p.id).filter((id): id is number => typeof id === 'number');
 
     let grouped: Record<number, string[]> = {};

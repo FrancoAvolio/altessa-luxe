@@ -13,6 +13,10 @@ async function setupBucket() {
     console.log('👀 Verificando si Existe el Bucket...');
 
     const { data: buckets, error: listError } = await adminSupabase.storage.listBuckets();
+    if (listError) {
+      console.error('Error listing buckets:', listError.message);
+      return;
+    }
     const existingBucket = buckets?.find(b => b.name === 'products-images');
 
     if (existingBucket) {
@@ -23,7 +27,7 @@ async function setupBucket() {
     // Create bucket
     console.log('📦 Creando bucket nueva...');
 
-    const { data, error: createError } = await adminSupabase.storage.createBucket('products-images', {
+    const { error: createError } = await adminSupabase.storage.createBucket('products-images', {
       public: true,
       allowedMimeTypes: ['image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'],
       fileSizeLimit: 5242880, // 5MB

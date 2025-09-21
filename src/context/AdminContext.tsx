@@ -66,16 +66,22 @@ export function AdminProvider({ children }: AdminProviderProps) {
   const signOut = async () => {
     try {
       // Intento sign out global; si no hay sesiÃ³n, no debe romper el flujo
-      const { error } = await supabase.auth.signOut({ /* @ts-ignore */ scope: 'global' as any });
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error && !String(error.message).toLowerCase().includes('auth session missing')) {
         throw error;
       }
-    } catch (err: any) {
-      const msg = String(err?.message || '').toLowerCase();
-      if (!msg.includes('auth session missing')) {
-        // Fallback: limpiar token local por si quedÃ³ huÃ©rfano
-        try { await supabase.auth.signOut({ /* @ts-ignore */ scope: 'local' as any }); } catch {}
-        throw err;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err ?? '');
+      if (!message.toLowerCase().includes('auth session missing')) {
+        try {
+          await supabase.auth.signOut({ scope: 'local' });
+        } catch {
+          // ignore secondary errors
+        }
+        if (err instanceof Error) {
+          throw err;
+        }
+        throw new Error(message || 'Error al cerrar sesion');
       }
     } finally {
       // Asegurar estado local consistente

@@ -3,8 +3,8 @@ import type { AdminUserAttributes, User } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const adminEmail = process.env.ADMIN_EMAIL;
-const adminPassword = process.env.ADMIN_PASSWORD;
+const adminEmail = process.env.ADMIN_EMAIL ?? '';
+const adminPassword = process.env.ADMIN_PASSWORD ?? '';
 
 if (!supabaseUrl || !serviceRoleKey) {
   throw new Error('Missing Supabase project credentials (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY).');
@@ -69,9 +69,7 @@ async function createNewAdmin() {
 async function ensureAdminUser() {
   console.log('Checking for existing admin user...');
 
-  const { data, error } = await adminSupabase.auth.admin.listUsers({
-    email: adminEmail,
-  });
+  const { data, error } = await adminSupabase.auth.admin.listUsers();
 
   if (error) {
     throw error;

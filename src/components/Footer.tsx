@@ -20,8 +20,9 @@ export default function Footer() {
     try {
       await signIn(email, password);
       setShowAdminLogin(false);
-    } catch (err: any) {
-      setError(err.message || "Error al iniciar sesión");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error al iniciar sesion';
+      setError(message || 'Error al iniciar sesion');
     } finally {
       setLoading(false);
     }
@@ -30,8 +31,8 @@ export default function Footer() {
   const handleLogout = async () => {
     try {
       await adminSignOut();
-    } catch (err: any) {
-      console.error("Error al cerrar sesión:", err);
+    } catch (err) {
+      console.error('Error al cerrar sesion:', err);
     }
   };
 
