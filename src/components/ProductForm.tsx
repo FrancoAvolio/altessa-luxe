@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase/supabase';
@@ -243,7 +243,6 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
 
           <div className="mb-4">
             <Label className="mb-1 block">Imágenes/Videos del producto</Label>
-
             {existingImages.length > 0 && (
               <div className="grid grid-cols-3 gap-2 mb-2">
                 {existingImages.map((url) => {

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../supabase/supabase';
@@ -42,7 +42,18 @@ export function AdminProvider({ children }: AdminProviderProps) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const isAdmin = user?.user_metadata?.role === process.env.NEXT_PUBLIC_ADMIN_ROLE;
+  const adminRole = (process.env.NEXT_PUBLIC_ADMIN_ROLE ?? 'admin').toLowerCase();
+  const adminEmails = [process.env.NEXT_PUBLIC_ADMIN_EMAIL ?? '', process.env.ADMIN_EMAIL ?? '']
+    .join(',')
+    .split(',')
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+  const userEmail = (user?.email ?? '').toLowerCase();
+  const userRole = String(user?.user_metadata?.role ?? '').toLowerCase();
+  const isAdmin = !!user && (
+    (adminRole && userRole === adminRole) ||
+    (adminEmails.length > 0 && adminEmails.includes(userEmail))
+  );
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({
@@ -54,7 +65,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
 
   const signOut = async () => {
     try {
-      // Intento sign out global; si no hay sesión, no debe romper el flujo
+      // Intento sign out global; si no hay sesiÃ³n, no debe romper el flujo
       const { error } = await supabase.auth.signOut({ /* @ts-ignore */ scope: 'global' as any });
       if (error && !String(error.message).toLowerCase().includes('auth session missing')) {
         throw error;
@@ -62,7 +73,7 @@ export function AdminProvider({ children }: AdminProviderProps) {
     } catch (err: any) {
       const msg = String(err?.message || '').toLowerCase();
       if (!msg.includes('auth session missing')) {
-        // Fallback: limpiar token local por si quedó huérfano
+        // Fallback: limpiar token local por si quedÃ³ huÃ©rfano
         try { await supabase.auth.signOut({ /* @ts-ignore */ scope: 'local' as any }); } catch {}
         throw err;
       }

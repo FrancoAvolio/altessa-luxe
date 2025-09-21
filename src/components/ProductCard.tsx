@@ -37,9 +37,9 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
   const isVideo = (u: string) => /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u) || u.startsWith('data:video');
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden relative hover:shadow-xl transition-shadow duration-300">
+    <Card className="h-full flex flex-col overflow-hidden relative hover:shadow-xl transition-shadow duration-300 glow-card">
       <Link href={href} className="block">
-        <div className="relative h-56 bg-white">
+        <div className="relative h-72 bg-white">
           {images.length > 0 && !imageError ? (
             isVideo(images[index]) ? (
               <video
@@ -49,6 +49,11 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
                 preload="metadata"
                 muted
                 playsInline
+                autoPlay
+                loop
+                onLoadedData={(e) => {
+                  try { e.currentTarget.play(); } catch {}
+                }}
               />
             ) : (
               <Image
@@ -93,7 +98,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
           )}
         </div>
       </Link>
-      <CardContent className="p-4 flex flex-col flex-1">
+      <CardContent className="p-5 flex flex-col flex-1">
         <Link href={href} className="block">
           <h3 className="font-semibold text-lg text-black mb-1 hover:underline line-clamp-2">{product.name}</h3>
           {product.description && (

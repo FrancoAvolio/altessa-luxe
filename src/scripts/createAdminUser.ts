@@ -1,4 +1,5 @@
-﻿import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
+import type { AdminUserAttributes, User } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -15,58 +16,85 @@ if (!adminEmail || !adminPassword) {
 
 const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
 
-async function createAdminUser() {
-  console.log('Checking for existing admin user...');
-
-  try {
-    const { data: listedUsers, error: listError } = await adminSupabase.auth.admin.listUsers({
-      email: adminEmail,
-    });
-
-    if (listError) {
-      throw listError;
-    }
-
-    const existingAdmin = listedUsers?.users?.find(user => user.email === adminEmail);
-
-    if (existingAdmin) {
-      console.log('Admin user already exists.');
-      console.log('   Email:', existingAdmin.email);
-      console.log('   Password: value from ADMIN_PASSWORD (not printed)');
-      console.log('   Role:', existingAdmin.user_metadata?.role ?? 'admin');
-      return;
-    }
-
-    console.log('Creating new admin user...');
-
-    const { data: authData, error: authError } = await adminSupabase.auth.admin.createUser({
-      email: adminEmail,
-      password: adminPassword,
-      email_confirm: true,
-      user_metadata: {
-        role: 'admin',
-        name: 'Administrador',
-        created_at: new Date().toISOString(),
-      },
-    });
-
-    if (authError) {
-      throw authError;
-    }
-
-    console.log('Admin user created successfully.');
-    console.log('   Email:', authData.user?.email);
-    console.log('   Password: value from ADMIN_PASSWORD (not printed)');
-    console.log('   User ID:', authData.user?.id);
-    console.log('   Role:', authData.user?.user_metadata?.role);
-  } catch (error) {
-    console.error('Error creating admin user:', error);
-    process.exitCode = 1;
-  }
+function buildAdminMetadata(user?: User | null) {
+  const base = user?.user_metadata ?? {};
+  return {
+    ...base,
+    role: 'admin',
+    name: typeof base.name === 'string' && base.name.trim() ? base.name : 'Administrador',
+    admin_synced_at: new Date().toISOString(),
+  };
 }
 
-createAdminUser().then(() => {
-  console.log('Next steps:');
-  console.log(' - Validate that email confirmations are enabled in Supabase Auth settings.');
-  console.log(' - Rotate ADMIN_PASSWORD periodically and update the .env.local file.');
-});
+async function updateExistingAdmin(existingAdmin: User) {
+  const updates: AdminUserAttributes = {
+    email: adminEmail,
+    password: adminPassword,
+    email_confirm: true,
+    user_metadata: buildAdminMetadata(existingAdmin),
+  };
+
+  const { data, error } = await adminSupabase.auth.admin.updateUserById(existingAdmin.id, updates);
+
+  if (error) {
+    throw error;
+  }
+
+  console.log('Admin user metadata synchronized.');
+  console.log('   Email:', data.user?.email);
+  console.log('   Role:', data.user?.user_metadata?.role);
+  console.log('   Name:', data.user?.user_metadata?.name);
+}
+
+async function createNewAdmin() {
+  console.log('Creating new admin user...');
+
+  const { data, error } = await adminSupabase.auth.admin.createUser({
+    email: adminEmail,
+    password: adminPassword,
+    email_confirm: true,
+    user_metadata: buildAdminMetadata(),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  console.log('Admin user created successfully.');
+  console.log('   Email:', data.user?.email);
+  console.log('   User ID:', data.user?.id);
+  console.log('   Role:', data.user?.user_metadata?.role);
+}
+
+async function ensureAdminUser() {
+  console.log('Checking for existing admin user...');
+
+  const { data, error } = await adminSupabase.auth.admin.listUsers({
+    email: adminEmail,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const existingAdmin = data.users.find((user) => user.email?.toLowerCase() === adminEmail.toLowerCase());
+
+  if (existingAdmin) {
+    console.log('Admin user already exists. Updating metadata/password to match environment.');
+    await updateExistingAdmin(existingAdmin);
+    return;
+  }
+
+  await createNewAdmin();
+}
+
+ensureAdminUser()
+  .then(() => {
+    console.log('Next steps:');
+    console.log(' - Validate that email confirmations are enabled in Supabase Auth settings.');
+    console.log(' - Rotate ADMIN_PASSWORD periodically and update the .env.local file.');
+  })
+  .catch((error) => {
+    console.error('Error ensuring admin user:', error);
+    process.exitCode = 1;
+  });

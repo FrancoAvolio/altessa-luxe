@@ -3,6 +3,7 @@
 import { useAdmin } from '../context/AdminContext';
 import Link from 'next/link';
 import Image from 'next/image';
+import ThemeToggle from './ThemeToggle';
 
 export default function Navbar() {
   const { user, signOut } = useAdmin();
@@ -28,6 +29,7 @@ export default function Navbar() {
 
           <div className="flex items-center space-x-4">
             <Link href="/contact" className="text-sm text-gold font-fancy hover:text-white">Contacto</Link>
+            <ThemeToggle />
             {isLogged ? (
               <>
                 <span className="text-sm text-gold">Bienvenido, {user?.email}</span>
@@ -52,7 +54,6 @@ export default function Navbar() {
     </nav>
   );
 }
-
 
 
 

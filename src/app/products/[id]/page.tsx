@@ -1,13 +1,12 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/supabase/supabase";
 import ProductGallery from "@/components/ProductGallery";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
-import React from "react";
 
 interface DBProduct {
   id: number;
@@ -28,12 +27,19 @@ interface RelatedProduct extends DBProduct {
   images: string[];
 }
 
+type ParamsInput = { id: string } | Promise<{ id: string }>;
+
 type PageProps = {
-  params: { id: string };
+  params: ParamsInput;
 };
 
 export default function ProductDetailPage({ params }: PageProps) {
-  const id = Number(params.id);
+  const resolvedParams = use(
+    typeof (params as any)?.then === "function"
+      ? (params as Promise<{ id: string }>)
+      : Promise.resolve(params as { id: string })
+  );
+  const id = Number(resolvedParams.id);
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +49,7 @@ export default function ProductDetailPage({ params }: PageProps) {
 
   useEffect(() => {
     if (!id || Number.isNaN(id)) {
-      setError("Producto inválido");
+      setError("Producto invalido");
       setLoading(false);
       return;
     }
@@ -157,16 +163,16 @@ export default function ProductDetailPage({ params }: PageProps) {
   if (error || !product) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-black">{error || "Producto no encontrado"}</p>
+        <p className="text-foreground">{error || "Producto no encontrado"}</p>
         <Link href="/" className="btn-gold px-4 py-2 rounded">Volver a inicio</Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen page-surface text-foreground">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="mb-4 text-sm text-black/70">
+        <div className="mb-4 text-sm text-muted">
           <Link href="/" className="hover:underline">Inicio</Link>
           <span className="mx-2">/</span>
           {product.category ? (
@@ -175,7 +181,7 @@ export default function ProductDetailPage({ params }: PageProps) {
             <span>Producto</span>
           )}
           <span className="mx-2">/</span>
-          <span className="text-black">{title}</span>
+          <span className="text-foreground">{title}</span>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -185,16 +191,16 @@ export default function ProductDetailPage({ params }: PageProps) {
           </div>
 
           {/* Details */}
-          <div className="text-black">
+          <div className="text-foreground">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">{product.name}</h1>
             {product.category && (
-              <div className="text-sm text-black/60 mb-3">Categoría: {product.category}</div>
+              <div className="text-sm text-muted mb-3">Categoria: {product.category}</div>
             )}
             {product.price !== null && (
               <div className="text-2xl font-semibold mb-4">${product.price}</div>
             )}
             {product.description && (
-              <p className="text-black/80 leading-relaxed whitespace-pre-wrap mb-6">{product.description}</p>
+              <p className="text-muted-strong leading-relaxed whitespace-pre-wrap mb-6">{product.description}</p>
             )}
 
             <div className="flex items-center gap-3 mt-4">
@@ -204,12 +210,6 @@ export default function ProductDetailPage({ params }: PageProps) {
               >
                 Volver
               </button>
-              <Link
-                href="/"
-                className="btn-gold px-6 py-3 rounded-lg font-semibold"
-              >
-                Seguir mirando
-              </Link>
               <a
                 href={buildWhatsAppLink(`Hola! Me interesa este producto: ${product.name}`)}
                 target="_blank"
@@ -225,27 +225,34 @@ export default function ProductDetailPage({ params }: PageProps) {
         {/* Related */}
         {related.length > 0 && (
           <section className="mt-12">
-            <h2 className="text-xl md:text-2xl font-bold text-black mb-4">También podría interesarte</h2>
+            <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">Tambien podria interesarte</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {related.map((p) => {
                 const cover = p.images[0] || p.image_url || "";
                 return (
                   <Link key={p.id} href={`/products/${p.id}`} className="group block">
-                    <div className="relative h-44 bg-white border rounded-lg overflow-hidden">
+                    <div className="relative h-44 bg-panel border border-panel rounded-lg overflow-hidden">
                       {cover ? (
                         isVideo(cover) ? (
-                          <div className="absolute inset-0 bg-black/80 text-white flex items-center justify-center">▶</div>
+                          <video
+                            src={cover}
+                            className="absolute inset-0 h-full w-full object-cover"
+                            autoPlay
+                            muted
+                            loop
+                            playsInline
+                          />
                         ) : (
                           <Image src={cover} alt={p.name} fill className="object-cover transition-transform duration-200 group-hover:scale-105" />
                         )
                       ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-black/60">Sin imagen</div>
+                        <div className="absolute inset-0 flex items-center justify-center text-muted">Sin imagen</div>
                       )}
                     </div>
                     <div className="mt-2">
-                      <div className="text-black font-semibold leading-tight group-hover:underline line-clamp-1">{p.name}</div>
+                      <div className="text-foreground font-semibold leading-tight group-hover:underline line-clamp-1">{p.name}</div>
                       {p.price !== null && (
-                        <div className="text-black/80">${p.price}</div>
+                        <div className="text-muted-strong">${p.price}</div>
                       )}
                     </div>
                   </Link>

@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
-import { FaRedhat } from 'react-icons/fa';
+import { FaRedhat, FaInstagram } from 'react-icons/fa';
+import Link from 'next/link';
 
 export default function Footer() {
   const { isAdmin, signIn, signOut: adminSignOut } = useAdmin();
@@ -56,16 +57,14 @@ export default function Footer() {
             <ul className="space-y-2 text-white/80">
               <li>Compras Seguras</li>
               <li>Garantía</li>
-              <li>Envíos Gratuitos</li>
+              <li>Atención Postventa</li>
               <li>Devoluciones</li>
             </ul>
           </div>
           <div>
             <h4 className="text-lg font-semibold mb-4 font-fancy text-gold">Síguenos</h4>
             <div className="flex space-x-4 text-white/80">
-              <span>Facebook</span>
-              <span>Instagram</span>
-              <span>Twitter</span>
+              <Link href='https://www.instagram.com/altessaluxe/' target='_blank'><FaInstagram className="h-6 w-6 cursor-pointer text-gold hover:text-white/80 underline underline-offset-2" /></Link>
             </div>
           </div>
         </div>
@@ -110,7 +109,7 @@ export default function Footer() {
                       />
                     </div>
                     <div>
-                      <label htmlFor="password" className="block text-xs font-medium text-white/80 mb-1">ContraseÃ±a</label>
+                      <label htmlFor="password" className="block text-xs font-medium text-white/80 mb-1">Contraseña</label>
                       <input
                         type="password"
                         id="password"
@@ -138,6 +137,15 @@ export default function Footer() {
 
         <div className="mt-8 pt-8 border-t border-gold/40 text-center text-white/70">
           <p>&copy; 2025 ALTESSA. Todos los derechos reservados.</p>
+          <p>Desarrollado por</p>
+          <Link
+              href="https://www.nehros.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-1 hover:underline text-[#9747FF] font-medium"
+            >
+              Nehros
+            </Link>
         </div>
       </div>
     </footer>
