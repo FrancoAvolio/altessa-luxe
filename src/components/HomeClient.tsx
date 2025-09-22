@@ -1,6 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ProductCard from '@/components/ProductCard';
 import ProductForm from '@/components/ProductForm';
 import CategoryForm, { type Category } from '@/components/CategoryForm';
@@ -8,19 +9,23 @@ import CategoryManager from '@/components/CategoryManager';
 import { useAdmin } from '@/context/AdminContext';
 import { supabase } from '@/supabase/supabase';
 import { deleteImage, deleteImages } from '@/supabase/storage';
-import {
-  fetchCategoriesList,
-  fetchProductsWithImages,
-  type ProductWithImages,
-} from '@/lib/products';
-
-interface HomeClientProps {
-  initialProducts: ProductWithImages[];
-  initialCategories: string[];
-  initialError?: string | null;
-}
+import { fetchProductsWithImages, type ProductWithImages } from '@/lib/products';
+import { fetchCategoryRows, type CategoryRow } from '@/lib/categories';
+import { queryKeys } from '@/lib/queryKeys';
 
 type Product = ProductWithImages;
+
+const productsQueryFn = async (): Promise<Product[]> => {
+  const { items, error } = await fetchProductsWithImages();
+  if (error) throw new Error(error);
+  return items;
+};
+
+const categoryRowsQueryFn = async (): Promise<CategoryRow[]> => {
+  const { items, error } = await fetchCategoryRows();
+  if (error) throw new Error(error);
+  return items;
+};
 
 function ProductGridSkeleton({ count = 6 }: { count?: number }) {
   return (
@@ -42,110 +47,129 @@ function ProductGridSkeleton({ count = 6 }: { count?: number }) {
   );
 }
 
-export default function HomeClient({ initialProducts, initialCategories, initialError }: HomeClientProps) {
+interface HomeClientProps {
+  initialProducts: ProductWithImages[];
+  initialCategoryRows: CategoryRow[];
+  initialError?: string | null;
+}
+
+export default function HomeClient({ initialProducts, initialCategoryRows, initialError }: HomeClientProps) {
   const { isAdmin } = useAdmin();
-  const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [loading, setLoading] = useState(initialProducts.length === 0);
-  const [error, setError] = useState<string | null>(initialError ?? null);
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [categories, setCategories] = useState<string[]>(initialCategories);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
+  const [error, setError] = useState<string | null>(initialError ?? null);
+
+  const productsQuery = useQuery<Product[]>({
+    queryKey: queryKeys.products,
+    queryFn: productsQueryFn,
+    initialData: initialProducts.length ? initialProducts : undefined,
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  });
+
+  const categoryRowsQuery = useQuery<CategoryRow[]>({
+    queryKey: queryKeys.categoryRows,
+    queryFn: categoryRowsQueryFn,
+    initialData: initialCategoryRows.length ? initialCategoryRows : undefined,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+  });
+
+  const products = useMemo(() => productsQuery.data ?? [], [productsQuery.data]);
+  const categoryRows = useMemo(() => categoryRowsQuery.data ?? [], [categoryRowsQuery.data]);
+  const categories = useMemo(() => categoryRows.map((row) => row.name), [categoryRows]);
+  const showSkeleton = productsQuery.status === 'pending';
 
   useEffect(() => {
-    setError(initialError ?? null);
-  }, [initialError]);
+    const queryError =
+      (productsQuery.error as Error | null | undefined) ??
+      (categoryRowsQuery.error as Error | null | undefined) ??
+      null;
 
+    if (queryError) {
+      setError(queryError.message);
+      return;
+    }
+
+    if (initialError && productsQuery.status === 'pending' && products.length === 0) {
+      setError(initialError);
+      return;
+    }
+
+    setError(null);
+  }, [initialError, productsQuery.error, categoryRowsQuery.error, productsQuery.status, products.length]);
 
   useEffect(() => {
-    setProducts(initialProducts);
-    setLoading(initialProducts.length === 0);
-  }, [initialProducts]);
-
-  useEffect(() => {
-    setCategories(initialCategories);
-  }, [initialCategories]);
-
-  useEffect(() => {
-    let active = true;
-
-    const loadProducts = async () => {
-      if (initialProducts.length) return;
-      setLoading(true);
-      const { items, error: fetchError } = await fetchProductsWithImages();
-      if (!active) return;
-      if (fetchError) {
-        setError(fetchError);
-      } else {
-        setError(null);
-      }
-      setProducts(items);
-      setLoading(false);
-    };
-
-    const loadCategories = async () => {
-      if (initialCategories.length) return;
-      const { items, error: catError } = await fetchCategoriesList();
-      if (!active) return;
-      if (catError) {
-        setError((prev) => prev ?? catError);
-      } else {
-        setError((prev) => (prev && prev !== initialError ? prev : null));
-      }
-      setCategories(items);
-    };
-
-    loadProducts();
-    loadCategories();
-
     const channel = supabase
       .channel('categories-listener')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, async () => {
-        const { items } = await fetchCategoriesList();
-        if (active) {
-          setCategories(items);
-        }
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'categories' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.categoryRows });
+        },
+      )
       .subscribe();
 
     return () => {
-      active = false;
       try {
         supabase.removeChannel(channel);
       } catch {
-        /* ignore */
+        // ignore cleanup issues
       }
     };
-  }, [initialProducts.length, initialCategories.length, initialError]);
+  }, [queryClient]);
 
-  const handleCreate = async (product: Product) => {
-    let finalImages = product.images || (product.image_url ? [product.image_url] : []);
-    if (product.id) {
-      const { data: imgs } = await supabase
-        .from('product_images')
-        .select('url, position')
-        .eq('product_id', product.id)
-        .order('position', { ascending: true });
-      if (Array.isArray(imgs) && imgs.length) {
-        const urls = imgs
-          .map((row) => row?.url)
-          .filter((url): url is string => typeof url === 'string' && url.length > 0);
-        if (urls.length) {
-          finalImages = urls;
-        }
-      }
-    }
-    setProducts((prev) => [...prev, { ...product, images: finalImages }]);
-    setShowForm(false);
+  const filtered = useMemo(() => (
+    selectedCategories.length
+      ? products.filter((p) => {
+          const category = (p.category ?? '').toString();
+          return selectedCategories.includes(category);
+        })
+      : products
+  ), [products, selectedCategories]);
+
+  useEffect(() => {
+    const total = Math.max(1, Math.ceil(Math.max(filtered.length, 1) / productsPerPage));
+    setCurrentPage((prev) => Math.min(prev, total));
+  }, [filtered.length, productsPerPage]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / productsPerPage));
+  const safePage = Math.min(currentPage, totalPages);
+  const indexOfLastProduct = safePage * productsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+  const currentProducts = filtered.slice(indexOfFirstProduct, indexOfLastProduct);
+
+  const paginate = (pageNumber: number) => {
+    const next = Math.min(Math.max(pageNumber, 1), totalPages);
+    setCurrentPage(next);
   };
 
-  const handleUpdate = async (product: Product) => {
-    setProducts((prev) => prev.map((p) => (p.id === product.id ? product : p)));
+  const handleCreate = (product: Product) => {
+    queryClient.setQueryData<Product[]>(queryKeys.products, (prev = []) => {
+      if (product.id && prev.some((p) => p.id === product.id)) {
+        return prev.map((p) => (p.id === product.id ? product : p));
+      }
+      return [...prev, product];
+    });
     setShowForm(false);
     setEditingProduct(undefined);
+    setCurrentPage(1);
+    setError(null);
+  };
+
+  const handleUpdate = (product: Product) => {
+    queryClient.setQueryData<Product[]>(queryKeys.products, (prev = []) =>
+      prev.map((p) => (p.id === product.id ? product : p)),
+    );
+    setShowForm(false);
+    setEditingProduct(undefined);
+    setError(null);
   };
 
   const handleDelete = async (id: number) => {
@@ -154,23 +178,29 @@ export default function HomeClient({ initialProducts, initialCategories, initial
       return;
     }
 
-    const toDelete = products.find((p) => p.id === id);
-    if (toDelete?.images?.length) {
-      await deleteImages(toDelete.images.filter((u) => u.includes('/storage/')));
-    } else if (toDelete?.image_url && toDelete.image_url.includes('/storage/')) {
-      await deleteImage(toDelete.image_url);
-    }
+    const snapshot = queryClient.getQueryData<Product[]>(queryKeys.products) ?? [];
+    const toDelete = snapshot.find((p) => p.id === id);
 
-    const { error: deleteError } = await supabase.from('products').delete().eq('id', id);
-    if (deleteError) {
-      setError(deleteError.message);
-    } else {
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+    try {
+      if (toDelete?.images?.length) {
+        await deleteImages(toDelete.images.filter((url) => url.includes('/storage/')));
+      } else if (toDelete?.image_url && toDelete.image_url.includes('/storage/')) {
+        await deleteImage(toDelete.image_url);
+      }
+
+      const { error: deleteError } = await supabase.from('products').delete().eq('id', id);
+      if (deleteError) throw deleteError;
+
+      queryClient.setQueryData<Product[]>(queryKeys.products, (prev = []) => prev.filter((p) => p.id !== id));
+      setError(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'No se pudo eliminar el producto';
+      setError(message);
     }
   };
 
   const handleSave = (product: Product) => {
-    const exists = product.id ? products.some((p) => p.id === product.id) : false;
+    const exists = typeof product.id === 'number' && products.some((p) => p.id === product.id);
     if (exists) {
       handleUpdate(product);
     } else {
@@ -190,24 +220,24 @@ export default function HomeClient({ initialProducts, initialCategories, initial
   };
 
   const handleCategoryCreate = (cat: Category) => {
-    setCategories((prev) => Array.from(new Set([...(prev || []), cat.name])).sort((a, b) => a.localeCompare(b)));
+    if (typeof cat.id === 'number' && cat.name) {
+      const trimmed = cat.name.trim();
+      if (trimmed) {
+        queryClient.setQueryData<CategoryRow[]>(queryKeys.categoryRows, (prev = []) => {
+          const exists = prev.some((row) => row.id === cat.id);
+          const next = exists
+            ? prev.map((row) => (row.id === cat.id ? { ...row, name: trimmed } : row))
+            : [...prev, { id: cat.id, name: trimmed }];
+          return next.sort((a, b) => a.name.localeCompare(b.name));
+        });
+      }
+    }
+    queryClient.invalidateQueries({ queryKey: queryKeys.categoryRows });
     setShowCategoryForm(false);
   };
 
-  const filtered = useMemo(() => (
-    selectedCategories.length
-      ? products.filter((p) => selectedCategories.includes((p.category ?? '').toString()))
-      : products
-  ), [products, selectedCategories]);
-
-  const totalPages = Math.ceil(filtered.length / productsPerPage);
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = filtered.slice(indexOfFirstProduct, indexOfLastProduct);
-
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
-
-  if (error) {
+  const hasProducts = products.length > 0;
+  if (error && !hasProducts) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gold text-lg">Error: {error}</div>
@@ -244,11 +274,7 @@ export default function HomeClient({ initialProducts, initialCategories, initial
               </button>
               <div>
                 <span className="text-sm font-semibold text-black block mb-2">Gestionar categorias</span>
-                <CategoryManager
-                  onChanged={(names) =>
-                    setCategories(Array.from(new Set(names)).sort((a, b) => a.localeCompare(b)))
-                  }
-                />
+                <CategoryManager />
               </div>
             </div>
           </section>
@@ -301,7 +327,7 @@ export default function HomeClient({ initialProducts, initialCategories, initial
           </aside>
 
           <main className="lg:col-span-3 space-y-8">
-            {loading ? (
+            {showSkeleton ? (
               <ProductGridSkeleton />
             ) : currentProducts.length === 0 ? (
               <div className="text-center text-foreground">
@@ -321,7 +347,7 @@ export default function HomeClient({ initialProducts, initialCategories, initial
                     <nav className="flex items-center space-x-1">
                       <button
                         onClick={() => paginate(currentPage - 1)}
-                        disabled={currentPage === 1}
+                        disabled={safePage === 1}
                         className="px-3 py-2 text-sm font-medium text-black bg-white border border-gold rounded-md hover:bg-black hover:text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Anterior
@@ -331,7 +357,7 @@ export default function HomeClient({ initialProducts, initialCategories, initial
                           key={number}
                           onClick={() => paginate(number)}
                           className={`px-3 py-2 text-sm font-medium rounded-md ${
-                            currentPage === number
+                            safePage === number
                               ? 'text-black bg-gold cursor-pointer'
                               : 'text-black bg-white border border-gold hover:bg-black hover:text-white cursor-pointer'
                           }`}
@@ -341,7 +367,7 @@ export default function HomeClient({ initialProducts, initialCategories, initial
                       ))}
                       <button
                         onClick={() => paginate(currentPage + 1)}
-                        disabled={currentPage === totalPages}
+                        disabled={safePage === totalPages}
                         className="px-3 py-2 text-sm font-medium text-black bg-white border border-gold rounded-md hover:bg-black hover:text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         Siguiente
@@ -369,3 +395,4 @@ export default function HomeClient({ initialProducts, initialCategories, initial
     </div>
   );
 }
+

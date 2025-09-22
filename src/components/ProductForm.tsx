@@ -74,28 +74,15 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
     }
   }, [product]);
 
-  // Cargar categorías existentes para sugerencias (datalist)
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('categories')
-          .select('name');
-        if (!error && data) {
-          const rows = (data ?? []) as Array<{ name: string | null }>;
-          const set = new Set<string>();
-          rows.forEach((row) => {
-            const c = (row?.name ?? '').toString().trim();
-            if (c) set.add(c);
-          });
-          setCategoryOptions(Array.from(set).sort((a, b) => a.localeCompare(b)));
-        }
-      } catch {
-        // Ignorar errores de autocompletado
-      }
-    };
-    loadCategories();
-  }, []);
+    const fromProps = (categories ?? []).map((entry) => entry?.toString().trim() ?? "").filter((value) => value.length > 0);
+    const current = (formData.category ?? "").toString().trim();
+    const merged = new Set<string>(fromProps);
+    if (current) {
+      merged.add(current);
+    }
+    setCategoryOptions(Array.from(merged).sort((a, b) => a.localeCompare(b)));
+  }, [categories, formData.category]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

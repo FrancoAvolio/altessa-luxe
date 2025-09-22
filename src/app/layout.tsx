@@ -9,6 +9,7 @@ import WhatsAppFloating from "../components/WhatsAppFloating";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "../context/ThemeContext";
+import QueryProvider from "../components/QueryProvider";
 
 const redHat = Red_Hat_Text({
   subsets: ["latin"],
@@ -166,14 +167,16 @@ export default function RootLayout({
         className={`${redHat.className} ${fancy.variable} antialiased`}
       >
         <ThemeProvider>
-          <AdminProvider>
-            <Navbar />
-            <div className="pt-16">{children}</div>
-            <WhatsAppFloating />
-            <Footer />
-            <SpeedInsights />
-            <Analytics />
-          </AdminProvider>
+          <QueryProvider>
+            <AdminProvider>
+              <Navbar />
+              <div className="pt-16">{children}</div>
+              <WhatsAppFloating />
+              <Footer />
+              <SpeedInsights />
+              <Analytics />
+            </AdminProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

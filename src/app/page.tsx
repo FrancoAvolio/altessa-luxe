@@ -1,18 +1,19 @@
-import HomeClient from '@/components/HomeClient';
-import { fetchCategoriesList, fetchProductsWithImages } from '@/lib/products';
+﻿import HomeClient from '@/components/HomeClient';
+import { fetchProductsWithImages } from '@/lib/products';
+import { fetchCategoryRows } from '@/lib/categories';
 
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
   const [productsResult, categoriesResult] = await Promise.all([
     fetchProductsWithImages(),
-    fetchCategoriesList(),
+    fetchCategoryRows(),
   ]);
 
   return (
     <HomeClient
       initialProducts={productsResult.items}
-      initialCategories={categoriesResult.items}
+      initialCategoryRows={categoriesResult.items}
       initialError={productsResult.error ?? categoriesResult.error}
     />
   );

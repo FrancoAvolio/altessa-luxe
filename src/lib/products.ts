@@ -1,4 +1,5 @@
-import { supabase } from '@/supabase/supabase';
+﻿import { supabase } from '@/supabase/supabase';
+import { fetchCategoryNames } from '@/lib/categories';
 
 export interface ProductWithImages {
   id?: number;
@@ -20,60 +21,68 @@ type CategoriesResponse = {
   error?: string;
 };
 
-type DbProductRow = {
+type ProductQueryRow = {
   id: number | null;
   name: string | null;
   description: string | null;
   price: number | null;
   image_url: string | null;
   category: string | null;
+  product_images?: Array<{ url: string | null; position: number | null }> | null;
 };
 
 export async function fetchProductsWithImages(): Promise<ProductsResponse> {
   try {
-    const { data: base, error } = await supabase.from('products').select('*');
+    const { data, error } = await supabase
+      .from('products')
+      .select(
+        `
+          id,
+          name,
+          description,
+          price,
+          image_url,
+          category,
+          product_images ( url, position )
+        `,
+      )
+      .order('position', { foreignTable: 'product_images', ascending: true })
+      .order('id', { ascending: true });
+
     if (error) {
       console.error('Supabase products error', error);
       return { items: [], error: error.message };
     }
 
-    const products = (base ?? []) as DbProductRow[];
-    const ids = products.map((p) => p.id).filter((id): id is number => typeof id === 'number');
-
-    let grouped: Record<number, string[]> = {};
-    if (ids.length) {
-      const { data: images, error: imgErr } = await supabase
-        .from('product_images')
-        .select('product_id, url, position')
-        .in('product_id', ids)
-        .order('position', { ascending: true });
-
-      if (imgErr) {
-        console.error('Supabase product_images error', imgErr);
-      } else if (images) {
-        grouped = (images as { product_id: number; url: string }[]).reduce<Record<number, string[]>>((acc, row) => {
-          if (!acc[row.product_id]) acc[row.product_id] = [];
-          acc[row.product_id].push(row.url);
-          return acc;
-        }, {});
-      }
-    }
-
-    const normalized = products.map((raw) => {
+    const rows = (data ?? []) as ProductQueryRow[];
+    const normalized = rows.map((raw) => {
       const id = typeof raw.id === 'number' ? raw.id : undefined;
       const name = typeof raw.name === 'string' ? raw.name : '';
       const description = typeof raw.description === 'string' ? raw.description : '';
       const price = typeof raw.price === 'number' ? raw.price : Number(raw.price ?? 0);
-      const imageUrl = typeof raw.image_url === 'string' ? raw.image_url : '';
+      const cover = typeof raw.image_url === 'string' ? raw.image_url : '';
       const category = typeof raw.category === 'string' ? raw.category : raw.category ?? null;
-      const images = id ? grouped[id] ?? (imageUrl ? [imageUrl] : []) : imageUrl ? [imageUrl] : [];
+
+      const joined = Array.isArray(raw.product_images)
+        ? raw.product_images
+            .map((item) => (typeof item?.url === 'string' ? item.url : ''))
+            .filter((url): url is string => url.length > 0)
+        : [];
+
+      const combined = [...joined, cover].filter((url): url is string => typeof url === 'string' && url.length > 0);
+      const seen = new Set<string>();
+      const images = combined.filter((url) => {
+        if (seen.has(url)) return false;
+        seen.add(url);
+        return true;
+      });
 
       return {
         id,
         name,
         description,
         price,
-        image_url: imageUrl,
+        image_url: cover,
         images,
         category,
       } satisfies ProductWithImages;
@@ -87,21 +96,5 @@ export async function fetchProductsWithImages(): Promise<ProductsResponse> {
 }
 
 export async function fetchCategoriesList(): Promise<CategoriesResponse> {
-  try {
-    const { data, error } = await supabase.from('categories').select('name');
-    if (error) {
-      console.error('Supabase categories error', error);
-      return { items: [], error: error.message };
-    }
-    const raw = (data ?? []) as { name?: string | null }[];
-    const names = raw
-      .map((item) => (item?.name ?? '').toString().trim())
-      .filter((name) => name.length > 0);
-
-    const unique = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
-    return { items: unique };
-  } catch (err) {
-    console.error('fetchCategoriesList failed', err);
-    return { items: [], error: 'No se pudieron cargar las categorÃ­as.' };
-  }
+  return fetchCategoryNames();
 }

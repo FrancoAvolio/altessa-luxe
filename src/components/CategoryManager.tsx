@@ -1,58 +1,61 @@
 ﻿"use client";
 
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabase/supabase';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-
-export interface CategoryRow {
-  id: number;
-  name: string;
-}
+import { fetchCategoryRows, type CategoryRow } from '@/lib/categories';
+import { queryKeys } from '@/lib/queryKeys';
 
 type CategoryManagerProps = { onChanged?: (names: string[]) => void; refreshToken?: number | string };
 
+const categoryRowsQueryFn = async (): Promise<CategoryRow[]> => {
+  const { items, error } = await fetchCategoryRows();
+  if (error) throw new Error(error);
+  return items;
+};
+
 export default function CategoryManager({ onChanged, refreshToken }: CategoryManagerProps) {
-  const [items, setItems] = useState<CategoryRow[]>([]);
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.from('categories').select('id, name').order('name');
-      if (!error && data) {
-        const arr = (data ?? []) as Array<{ id: number; name: string }>;
-        setItems(arr);
-        onChanged?.(arr.map((c) => c.name));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [onChanged]);
+  const { data: items = [], isFetching } = useQuery<CategoryRow[]>({
+    queryKey: queryKeys.categoryRows,
+    queryFn: categoryRowsQueryFn,
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
-    load();
-    // Suscripción en tiempo real para reflejar inserts/updates/deletes sin refrescar
+    if (onChanged) {
+      onChanged(items.map((row) => row.name));
+    }
+  }, [items, onChanged]);
+
+  useEffect(() => {
+    if (refreshToken !== undefined) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.categoryRows });
+    }
+  }, [refreshToken, queryClient]);
+
+  useEffect(() => {
     const channel = supabase
       .channel('categories-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
-        load();
+        queryClient.invalidateQueries({ queryKey: queryKeys.categoryRows });
       })
       .subscribe();
 
     return () => {
-      try { supabase.removeChannel(channel); } catch { /* ignore */ }
+      try {
+        supabase.removeChannel(channel);
+      } catch {
+        // ignore cleanup errors
+      }
     };
-  }, [load]);
-
-  // Forzar recarga cuando cambie el token desde el padre (p. ej., al crear una categoría)
-  useEffect(() => {
-    if (refreshToken !== undefined) {
-      load();
-    }
-  }, [refreshToken, load]);
+  }, [queryClient]);
 
   const beginEdit = (row: CategoryRow) => {
     setEditingId(row.id);
@@ -72,24 +75,23 @@ export default function CategoryManager({ onChanged, refreshToken }: CategoryMan
     }
     setLoading(true);
     try {
-      // Actualiza nombre en tabla categories
       const { error: upErr } = await supabase
         .from('categories')
         .update({ name: newName })
         .eq('id', row.id);
       if (upErr) throw upErr;
 
-      // Sincroniza productos que usaban el nombre anterior
       const { error: prodErr } = await supabase
         .from('products')
         .update({ category: newName })
         .eq('category', row.name);
       if (prodErr) throw prodErr;
 
-      await load();
+      queryClient.setQueryData<CategoryRow[]>(queryKeys.categoryRows, (prev = []) =>
+        prev.map((item) => (item.id === row.id ? { ...item, name: newName } : item)));
     } catch (e) {
       console.error(e);
-      alert('No se pudo renombrar la categorÃ­a');
+      alert('No se pudo renombrar la categoria');
     } finally {
       setLoading(false);
       cancelEdit();
@@ -97,27 +99,26 @@ export default function CategoryManager({ onChanged, refreshToken }: CategoryMan
   };
 
   const remove = async (row: CategoryRow) => {
-    if (!confirm(`Eliminar la categoría "${row.name}"? Los productos quedarán sin categoría.`)) return;
+    if (!confirm(`Eliminar la categoria "${row.name}"? Los productos quedaran sin categoria.`)) return;
     setLoading(true);
     try {
-      // Primero limpia productos
       const { error: prodErr } = await supabase
         .from('products')
         .update({ category: null })
         .eq('category', row.name);
       if (prodErr) throw prodErr;
 
-      // Luego elimina la categorÃ­a
       const { error: delErr } = await supabase
         .from('categories')
         .delete()
         .eq('id', row.id);
       if (delErr) throw delErr;
 
-      await load();
+      queryClient.setQueryData<CategoryRow[]>(queryKeys.categoryRows, (prev = []) =>
+        prev.filter((item) => item.id !== row.id));
     } catch (e) {
       console.error(e);
-      alert('No se pudo eliminar la categorÃ­a');
+      alert('No se pudo eliminar la categoria');
     } finally {
       setLoading(false);
     }
@@ -125,10 +126,10 @@ export default function CategoryManager({ onChanged, refreshToken }: CategoryMan
 
   return (
     <div className="mt-4">
-      <h3 className="font-semibold mb-2 text-black">Gestionar categorías</h3>
+      <h3 className="font-semibold mb-2 text-black">Gestionar categorias</h3>
       <div className="border rounded-md divide-y bg-white border border-black text-black">
-        {items.length === 0 && (
-          <div className="px-3 py-2 text-sm text-black/70">No hay categorís aún.</div>
+        {items.length === 0 && !isFetching && (
+          <div className="px-3 py-2 text-sm text-black/70">No hay categorias aun.</div>
         )}
         {items.map((row) => (
           <div key={row.id} className="flex items-center gap-2 px-3 py-2">
@@ -141,16 +142,16 @@ export default function CategoryManager({ onChanged, refreshToken }: CategoryMan
             ) : (
               <>
                 <span className="flex-1 text-sm">{row.name}</span>
-                <Button onClick={() => beginEdit(row)} variant="secondary" className="cursor-pointer">Editar</Button>
-                <Button onClick={() => remove(row)} variant="destructive" className="cursor-pointer">Eliminar</Button>
+                <Button onClick={() => beginEdit(row)} variant="secondary" disabled={loading} className="cursor-pointer">Editar</Button>
+                <Button onClick={() => remove(row)} variant="destructive" disabled={loading} className="cursor-pointer">Eliminar</Button>
               </>
             )}
           </div>
         ))}
+        {isFetching && (
+          <div className="px-3 py-2 text-sm text-black/70">Actualizando...</div>
+        )}
       </div>
     </div>
   );
 }
-
-
-
