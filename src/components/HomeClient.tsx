@@ -220,14 +220,16 @@ export default function HomeClient({ initialProducts, initialCategoryRows, initi
   };
 
   const handleCategoryCreate = (cat: Category) => {
-    if (typeof cat.id === 'number' && cat.name) {
-      const trimmed = cat.name.trim();
+    const id = cat.id;
+    const rawName = cat.name;
+    if (typeof id === 'number' && rawName) {
+      const trimmed = rawName.trim();
       if (trimmed) {
         queryClient.setQueryData<CategoryRow[]>(queryKeys.categoryRows, (prev = []) => {
-          const exists = prev.some((row) => row.id === cat.id);
+          const exists = prev.some((row) => row.id === id);
           const next = exists
-            ? prev.map((row) => (row.id === cat.id ? { ...row, name: trimmed } : row))
-            : [...prev, { id: cat.id, name: trimmed }];
+            ? prev.map((row) => (row.id === id ? { ...row, name: trimmed } : row))
+            : [...prev, { id, name: trimmed }];
           return next.sort((a, b) => a.name.localeCompare(b.name));
         });
       }
@@ -395,4 +397,5 @@ export default function HomeClient({ initialProducts, initialCategoryRows, initi
     </div>
   );
 }
+
 
