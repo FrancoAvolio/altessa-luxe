@@ -1,10 +1,12 @@
-"use client";
+'use client';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useAdmin } from '../context/AdminContext';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
+import { imgPresets } from '@/lib/images';
 
 interface Product {
   id?: number;
@@ -21,10 +23,15 @@ interface ProductCardProps {
   onDelete: (id: number) => void;
 }
 
+const isVideo = (u: string) =>
+  /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u) || u.startsWith('data:video');
+
 export default function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
   const { isAdmin } = useAdmin();
   const [index, setIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
+  const [inView, setInView] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
 
   const images = (product.images && product.images.length > 0)
     ? product.images
@@ -34,35 +41,61 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
   const prev = () => setIndex((prev) => (prev - 1 + Math.max(images.length, 1)) % Math.max(images.length, 1));
 
   const href = product.id ? `/products/${product.id}` : '#';
-  const isVideo = (u: string) => /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u) || u.startsWith('data:video');
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => setInView(entries[0]?.isIntersecting ?? false),
+      { rootMargin: '200px 0px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const current = images[index];
+  const poster = images[0] && !isVideo(images[0]) ? imgPresets.thumb(images[0]) : undefined;
+  const imgForCard = current && !isVideo(current) ? imgPresets.card(current) : current;
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden relative hover:shadow-xl transition-shadow duration-300 glow-card">
+    <Card ref={ref} className="h-full flex flex-col overflow-hidden relative hover:shadow-xl transition-shadow duration-300 glow-card">
       <Link href={href} className="block">
         <div className="relative h-72 bg-white">
           {images.length > 0 && !imageError ? (
-            isVideo(images[index]) ? (
-              <video
-                key={images[index]}
-                src={images[index]}
-                className="absolute inset-0 w-full h-full object-cover"
-                preload="metadata"
-                muted
-                playsInline
-                autoPlay
-                loop
-                onLoadedData={(e) => {
-                  try { e.currentTarget.play(); } catch {}
-                }}
-              />
+            isVideo(current) ? (
+              inView ? (
+                <video
+                  key={current}
+                  src={current}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  preload="none"
+                  muted
+                  playsInline
+                  controls={false}
+                  onMouseEnter={(e) => { try { e.currentTarget.play(); } catch {} }}
+                  onMouseLeave={(e) => { try { e.currentTarget.pause(); } catch {} }}
+                  poster={poster}
+                />
+              ) : poster ? (
+                <Image
+                  src={poster}
+                  alt={product.name}
+                  fill
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  className="object-cover"
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-black/60">Video</div>
+              )
             ) : (
               <Image
-                key={images[index]}
-                src={images[index]}
+                key={imgForCard}
+                src={imgForCard}
                 alt={product.name}
                 fill
                 className="object-cover"
                 onError={() => setImageError(true)}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               />
             )
           ) : (
@@ -75,7 +108,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
             <>
               <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1">
                 {images.map((_, i) => (
-                  <span key={i} className={`h-1.5 w-1.5 rounded-full ${index === i ? 'bg-white' : 'bg-white/60'}`}></span>
+                  <span key={i} className={`h-1.5 w-1.5 rounded-full ${index === i ? 'bg-white' : 'bg-white/60'}`} />
                 ))}
               </div>
               <div className="absolute inset-y-0 left-0 flex items-center">
@@ -101,9 +134,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
       <CardContent className="p-5 flex flex-col flex-1">
         <Link href={href} className="block">
           <h3 className="font-semibold text-lg text-black mb-1 hover:underline line-clamp-2">{product.name}</h3>
-          {product.description && (
-            <p className="text-black/70 text-sm line-clamp-1">{product.description}</p>
-          )}
+          {product.description && <p className="text-black/70 text-sm line-clamp-1">{product.description}</p>}
         </Link>
         <div className="mt-auto">
           <p className="text-xl font-bold text-black">${product.price}</p>

@@ -1,24 +1,22 @@
-﻿"use client";
-import Image from "next/image";
+﻿'use client';
+
+import NextImage from "next/image";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { imgPresets } from "@/lib/images";
 
 interface ProductGalleryProps {
   images: string[];
   alt: string;
 }
 
-interface Size2D {
-  w: number;
-  h: number;
-}
-
-interface RenderedSize extends Size2D {
-  offsetX: number;
-  offsetY: number;
-}
+interface Size2D { w: number; h: number; }
+interface RenderedSize extends Size2D { offsetX: number; offsetY: number; }
 
 const ZOOM_SCALE = 1.6;
 const LENS_SIZE = 100;
+
+const isVideo = (u: string) =>
+  /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u) || u.startsWith('data:video');
 
 export default function ProductGallery({ images, alt }: ProductGalleryProps) {
   const [active, setActive] = useState(0);
@@ -27,45 +25,45 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
   const [containerSize, setContainerSize] = useState<Size2D>({ w: 1, h: 1 });
   const [naturalSize, setNaturalSize] = useState<Size2D>({ w: 0, h: 0 });
   const [renderedSize, setRenderedSize] = useState<RenderedSize>({ w: 1, h: 1, offsetX: 0, offsetY: 0 });
+  const [hiResUrl, setHiResUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const src = images[active] || "";
-  const isVideo = (u: string) => /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u) || u.startsWith('data:video');
+  const raw = images[active] || "";
+  const video = isVideo(raw);
 
+  // URLs optimizadas
+  const displaySrc = video ? raw : imgPresets.mid(raw);
+  const hiSrc = video ? null : imgPresets.zoomHi(raw);
+
+  // Reset al cambiar media
   useEffect(() => {
     setShowLens(false);
     setLensPos({ x: 0, y: 0 });
     setNaturalSize({ w: 0, h: 0 });
-  }, [src]);
+    setHiResUrl(null);
+  }, [raw]);
 
+  // Observer de tamaño del contenedor
   useEffect(() => {
     const node = containerRef.current;
     if (!node) return;
 
-    const update = () => {
-      setContainerSize({ w: node.clientWidth, h: node.clientHeight });
-    };
-
+    const update = () => setContainerSize({ w: node.clientWidth, h: node.clientHeight });
     update();
 
     if (typeof ResizeObserver !== 'undefined') {
-      const observer = new ResizeObserver(() => update());
-      observer.observe(node);
-      return () => observer.disconnect();
+      const ob = new ResizeObserver(update);
+      ob.observe(node);
+      return () => ob.disconnect();
     }
-
-    if (typeof window !== 'undefined') {
-      const handle = () => update();
-      window.addEventListener('resize', handle);
-      return () => window.removeEventListener('resize', handle);
-    }
-
-    return () => {};
+    const handle = () => update();
+    window.addEventListener('resize', handle);
+    return () => window.removeEventListener('resize', handle);
   }, []);
 
+  // Cálculo de tamaño renderizado (para lente)
   useEffect(() => {
     if (!naturalSize.w || !naturalSize.h || !containerSize.w || !containerSize.h) return;
-
     const imageRatio = naturalSize.w / naturalSize.h;
     const containerRatio = containerSize.w / containerSize.h;
 
@@ -92,6 +90,7 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
     height: 'clamp(280px, 55vw, 400px)',
   }), []);
 
+  // Fondo del lente: usa hiRes cuando ya esté cargada; si no, la mid
   const bgStyle = useMemo(() => {
     const width = renderedSize.w || containerSize.w;
     const height = renderedSize.h || containerSize.h;
@@ -105,19 +104,15 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
     const posX = Math.max(0, Math.min((lensPos.x + offsetX) * ZOOM_SCALE - LENS_SIZE / 2, maxX));
     const posY = Math.max(0, Math.min((lensPos.y + offsetY) * ZOOM_SCALE - LENS_SIZE / 2, maxY));
 
+    const bgImage = hiResUrl ?? displaySrc;
+
     return {
-      backgroundImage: src ? `url(${src})` : undefined,
+      backgroundImage: bgImage ? `url(${bgImage})` : undefined,
       backgroundRepeat: 'no-repeat',
       backgroundSize: `${bgW}px ${bgH}px`,
       backgroundPosition: `-${posX}px -${posY}px`,
     } as React.CSSProperties;
-  }, [src, lensPos, renderedSize, containerSize]);
-
-  const updateNaturalSize = (width: number, height: number) => {
-    if (width && height) {
-      setNaturalSize({ w: width, h: height });
-    }
-  };
+  }, [displaySrc, hiResUrl, lensPos, renderedSize, containerSize]);
 
   const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -127,43 +122,61 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
     setLensPos({ x, y });
   };
 
+  // Pre-carga de hi-res al entrar el mouse
+  const handleEnter = (event: React.MouseEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setContainerSize({ w: rect.width, h: rect.height });
+    setShowLens(true);
+
+    if (!hiSrc || hiResUrl) return;
+
+    // 👇 Usar el constructor DOM, no el componente NextImage
+    if (typeof window !== 'undefined' && typeof window.Image !== 'undefined') {
+      const preload = new window.Image();
+      preload.onload = () => setHiResUrl(hiSrc);
+      preload.src = hiSrc;
+    }
+  };
+
   return (
     <div className="w-full">
       <div
         ref={containerRef}
         className="relative w-full bg-panel border border-panel rounded-lg overflow-hidden"
         style={containerStyle}
-        onMouseEnter={(event) => {
-          const rect = event.currentTarget.getBoundingClientRect();
-          setContainerSize({ w: rect.width, h: rect.height });
-          setShowLens(true);
-        }}
+        onMouseEnter={handleEnter}
         onMouseLeave={() => setShowLens(false)}
         onMouseMove={onMove}
       >
-        {src ? (
-          isVideo(src) ? (
+        {displaySrc ? (
+          video ? (
             <video
-              key={src}
-              src={src}
+              key={displaySrc}
+              src={displaySrc}
               className="absolute inset-0 w-full h-full object-cover bg-panel"
               controls
               playsInline
-              onLoadedMetadata={(event) => {
-                updateNaturalSize(event.currentTarget.videoWidth, event.currentTarget.videoHeight);
+              preload="metadata"
+              onLoadedMetadata={(ev) => {
+                const v = ev.currentTarget;
+                if (v.videoWidth && v.videoHeight) {
+                  setNaturalSize({ w: v.videoWidth, h: v.videoHeight });
+                }
               }}
             />
           ) : (
-            <Image
-              key={src}
-              src={src}
+            <NextImage
+              key={displaySrc}
+              src={displaySrc}
               alt={alt}
               fill
               className="object-cover select-none bg-panel"
               sizes="(max-width: 768px) 100vw, 50vw"
               priority
               onLoadingComplete={({ naturalWidth, naturalHeight }) => {
-                updateNaturalSize(naturalWidth, naturalHeight);
+                if (naturalWidth && naturalHeight) {
+                  setNaturalSize({ w: naturalWidth, h: naturalHeight });
+                }
               }}
             />
           )
@@ -173,7 +186,7 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
           </div>
         )}
 
-        {showLens && src && !isVideo(src) && (
+        {showLens && !video && displaySrc && (
           <div
             className="hidden md:block pointer-events-none absolute rounded-full border-2 border-black/30 shadow-xl"
             style={{
@@ -189,25 +202,28 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
 
       {images.length > 1 && (
         <div className="mt-3 grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2">
-          {images.map((img, i) => (
-            <button
-              key={img + i}
-              type="button"
-              className={`relative aspect-square border rounded overflow-hidden ${
-                i === active ? "ring-2 ring-[var(--gold)]" : "hover:opacity-80"
-              }`}
-              onClick={() => setActive(i)}
-            >
-              {isVideo(img) ? (
-                <div className="absolute inset-0 bg-black/80 text-white flex items-center justify-center text-lg">{'\u25B6'}</div>
-              ) : (
-                <Image src={img} alt={`${alt} thumbnail ${i + 1}`} fill className="object-cover" />
-              )}
-            </button>
-          ))}
+          {images.map((img, i) => {
+            const isVid = isVideo(img);
+            const thumb = isVid ? img : imgPresets.thumb(img);
+            return (
+              <button
+                key={img + i}
+                type="button"
+                className={`relative aspect-square border rounded overflow-hidden ${
+                  i === active ? "ring-2 ring-[var(--gold)]" : "hover:opacity-80"
+                }`}
+                onClick={() => setActive(i)}
+              >
+                {isVid ? (
+                  <div className="absolute inset-0 bg-black/80 text-white flex items-center justify-center text-lg">{'\u25B6'}</div>
+                ) : (
+                  <NextImage src={thumb} alt={`${alt} thumbnail ${i + 1}`} fill className="object-cover" sizes="96px" />
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-

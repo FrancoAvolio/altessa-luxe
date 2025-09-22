@@ -1,8 +1,9 @@
-﻿import HomeClient from '@/components/HomeClient';
+﻿// app/page.tsx
+import HomeClient from '@/components/HomeClient';
 import { fetchProductsWithImages } from '@/lib/products';
 import { fetchCategoryRows } from '@/lib/categories';
 
-export const dynamic = 'force-dynamic';
+export const revalidate = 120;
 
 export default async function HomePage() {
   const [productsResult, categoriesResult] = await Promise.all([
