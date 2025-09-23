@@ -38,7 +38,6 @@ export const imgPresets = {
       height: 800,
       quality: 70,
       resize: "cover",
-      format: "webp",
     }),
   thumb: (url: string) =>
     supabaseTransform(url, {
@@ -46,7 +45,6 @@ export const imgPresets = {
       height: 300,
       quality: 65,
       resize: "cover",
-      format: "webp",
     }),
   mid: (url: string) =>
     supabaseTransform(url, {
@@ -54,7 +52,6 @@ export const imgPresets = {
       height: 1200,
       quality: 72,
       resize: "contain",
-      format: "webp",
     }),
   zoomHi: (url: string) =>
     supabaseTransform(url, {
@@ -62,6 +59,5 @@ export const imgPresets = {
       height: 2000,
       quality: 80,
       resize: "contain",
-      format: "webp",
     }),
 };

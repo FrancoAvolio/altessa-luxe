@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
@@ -31,7 +31,9 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
   const [index, setIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [inView, setInView] = useState(false);
+  const [isHoveringMedia, setIsHoveringMedia] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const images = (product.images && product.images.length > 0)
     ? product.images
@@ -53,6 +55,24 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
     return () => io.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!isVideo(images[index] ?? '')) {
+      return;
+    }
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (inView && isHoveringMedia) {
+      const playPromise = video.play();
+      if (playPromise) {
+        playPromise.catch(() => {});
+      }
+    } else {
+      video.pause();
+      video.currentTime = 0;
+    }
+  }, [images, index, inView, isHoveringMedia]);
+
   const current = images[index];
   const poster = images[0] && !isVideo(images[0]) ? imgPresets.thumb(images[0]) : undefined;
   const imgForCard = current && !isVideo(current) ? imgPresets.card(current) : current;
@@ -60,20 +80,24 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
   return (
     <Card ref={ref} className="h-full flex flex-col overflow-hidden relative hover:shadow-xl transition-shadow duration-300 glow-card">
       <Link href={href} className="block">
-        <div className="relative h-72 bg-white">
+        <div
+          className="relative h-72 bg-white"
+          onPointerEnter={() => setIsHoveringMedia(true)}
+          onPointerLeave={() => setIsHoveringMedia(false)}
+        >
           {images.length > 0 && !imageError ? (
             isVideo(current) ? (
               inView ? (
                 <video
                   key={current}
+                  ref={videoRef}
                   src={current}
                   className="absolute inset-0 w-full h-full object-cover"
-                  preload="none"
+                  preload="metadata"
                   muted
+                  loop
                   playsInline
                   controls={false}
-                  onMouseEnter={(e) => { try { e.currentTarget.play(); } catch {} }}
-                  onMouseLeave={(e) => { try { e.currentTarget.pause(); } catch {} }}
                   poster={poster}
                 />
               ) : poster ? (
