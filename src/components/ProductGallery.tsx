@@ -172,7 +172,8 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
               fill
               className="object-cover select-none bg-panel"
               sizes="(max-width: 768px) 100vw, 50vw"
-              priority
+              priority={active === 0}
+              loading={active === 0 ? 'eager' : 'lazy'}
               onLoadingComplete={({ naturalWidth, naturalHeight }) => {
                 if (naturalWidth && naturalHeight) {
                   setNaturalSize({ w: naturalWidth, h: naturalHeight });
@@ -227,3 +228,4 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
     </div>
   );
 }
+

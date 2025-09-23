@@ -1,7 +1,82 @@
-// Supabase Storage utility
 import { supabase } from './supabase';
+import type { Options as ImageCompressionOptions } from 'browser-image-compression';
 
 export const storage = supabase.storage;
+
+const MAX_UPLOAD_MB = 50;
+const MIME_EXTENSION: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/avif': 'avif',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+  'image/gif': 'gif',
+  'image/svg+xml': 'svg',
+  'video/mp4': 'mp4',
+  'video/webm': 'webm',
+  'video/ogg': 'ogv',
+  'video/quicktime': 'mov',
+};
+
+let imageCompressionModule: (typeof import('browser-image-compression')) | null = null;
+
+async function loadImageCompression() {
+  if (typeof window === 'undefined') return null;
+  if (imageCompressionModule) return imageCompressionModule;
+  imageCompressionModule = await import('browser-image-compression');
+  return imageCompressionModule;
+}
+
+function getExtensionFromFile(file: File): string {
+  const fromMime = MIME_EXTENSION[file.type];
+  if (fromMime) return fromMime;
+  const parts = file.name.split('.');
+  if (parts.length > 1) {
+    return parts.pop() as string;
+  }
+  return 'dat';
+}
+
+async function maybeCompressImage(file: File): Promise<File> {
+  if (!file.type.startsWith('image/')) return file;
+  try {
+    const compressionModule = await loadImageCompression();
+    if (!compressionModule) return file;
+    const compressor = compressionModule.default ?? compressionModule;
+    const options: ImageCompressionOptions = {
+      maxSizeMB: 1.2,
+      maxWidthOrHeight: 1600,
+      initialQuality: 0.75,
+      useWebWorker: true,
+      fileType: 'image/webp',
+    };
+    const compressed = await compressor(file, options);
+    const optimized =
+      compressed instanceof File
+        ? compressed
+        : new File([compressed], file.name, { type: options.fileType ?? file.type });
+
+    const normalized =
+      options.fileType && optimized.type !== options.fileType
+        ? new File([optimized], optimized.name, { type: options.fileType })
+        : optimized;
+
+    if (normalized.size >= file.size * 0.98) {
+      return file;
+    }
+
+    return normalized;
+  } catch (error) {
+    console.warn('Image compression failed. Falling back to original file.', error);
+    return file;
+  }
+}
+
+function randomFileName(ext: string) {
+  const token = Math.random().toString(36).slice(2, 10);
+  return `${Date.now()}-${token}.${ext}`;
+}
 
 /**
  * Upload a media file (image or video) to Supabase Storage
@@ -14,29 +89,30 @@ export async function uploadImage(
   folder: string = 'products'
 ): Promise<string | null> {
   try {
-    // quick client-side size guard (50MB)
-    const MAX_MB = 50;
-    const maxBytes = MAX_MB * 1024 * 1024;
-    if (file.size > maxBytes) {
-      throw new Error(`El archivo "${file.name}" supera ${MAX_MB}MB.`);
+    const maxBytes = MAX_UPLOAD_MB * 1024 * 1024;
+    const prepared = await maybeCompressImage(file);
+
+    if (prepared.size > maxBytes) {
+      throw new Error(`El archivo "${file.name}" supera ${MAX_UPLOAD_MB}MB incluso tras optimizarlo.`);
     }
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+
+    const ext = getExtensionFromFile(prepared);
+    const fileName = randomFileName(ext);
     const filePath = `${folder}/${fileName}`;
 
     const { error } = await supabase.storage
       .from(bucketName)
-      .upload(filePath, file, {
+      .upload(filePath, prepared, {
         cacheControl: '3600',
         upsert: false,
+        contentType: prepared.type || undefined,
       });
 
     if (error) throw error;
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from(bucketName)
-      .getPublicUrl(filePath);
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from(bucketName).getPublicUrl(filePath);
 
     return publicUrl;
   } catch (error) {
@@ -54,7 +130,7 @@ export async function uploadImages(
   for (const file of files) {
     const url = await uploadImage(file, bucketName, folder);
     if (!url) {
-      throw new Error(`No se pudo subir "${file.name}". Verifica el tamaño/límites.`);
+      throw new Error(`No se pudo subir "${file.name}". Verifica el tamano/limites.`);
     }
     urls.push(url);
   }
@@ -136,3 +212,4 @@ export async function deleteImages(
   }
   return ok;
 }
+
