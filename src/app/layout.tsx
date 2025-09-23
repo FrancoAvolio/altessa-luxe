@@ -5,7 +5,7 @@ import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { AdminProvider } from "../context/AdminContext";
-import WhatsAppFloating from "../components/WhatsAppFloating";
+import InstagramFloating from "../components/InstagramFloating";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { ThemeProvider } from "../context/ThemeContext";
@@ -38,10 +38,6 @@ const siteMetadataBase = (() => {
 
 const defaultDescription =
   "Altessa Luxe ofrece relojes de lujo, colecciones exclusivas y asesoramiento personalizado en Argentina.";
-const contactPhoneRaw = process.env.NEXT_PUBLIC_WHATSAPP_PHONE ?? "";
-const contactPhone = contactPhoneRaw
-  .replace(/[^0-9+]/g, "")
-  .replace(/^[+]?/, "");
 const altessaLogoPng = "/altessa-logo.png";
 const altessaLogoSvg = "/altessa-logo.svg";
 
@@ -51,19 +47,10 @@ const organizationJsonLd = JSON.stringify({
   name: siteName,
   url: siteMetadataBase.origin,
   logo: `${siteMetadataBase.origin}${altessaLogoPng}`,
-  sameAs: ["https://www.instagram.com/altessaluxe/"],
-  ...(contactPhone
-    ? {
-        contactPoint: [
-          {
-            "@type": "ContactPoint",
-            contactType: "customer service",
-            telephone: `+${contactPhone}`,
-            availableLanguage: ["es", "en"],
-          },
-        ],
-      }
-    : {}),
+  sameAs: [
+    "https://www.instagram.com/altessaluxe/",
+    "https://www.tiktok.com/@altessa.luxe",
+  ],
 });
 
 export const metadata: Metadata = {
@@ -171,7 +158,7 @@ export default function RootLayout({
             <AdminProvider>
               <Navbar />
               <div className="pt-16">{children}</div>
-              <WhatsAppFloating />
+              <InstagramFloating />
               <Footer />
               <SpeedInsights />
               <Analytics />

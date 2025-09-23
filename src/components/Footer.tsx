@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAdmin } from "../context/AdminContext";
-import { FaRedhat, FaInstagram } from "react-icons/fa";
+import { FaRedhat, FaInstagram, FaTiktok } from "react-icons/fa";
 import Link from "next/link";
 
 export default function Footer() {
@@ -80,6 +80,12 @@ export default function Footer() {
                 target="_blank"
               >
                 <FaInstagram className="h-6 w-6 cursor-pointer text-gold hover:text-white/80 underline underline-offset-2" />
+              </Link>
+              <Link
+                href="https://www.tiktok.com/@altessa.luxe"
+                target="_blank"
+              >
+                <FaTiktok className="h-6 w-6 cursor-pointer text-gold hover:text-white/80 underline underline-offset-2" />
               </Link>
             </div>
           </div>

@@ -2,11 +2,9 @@
 
 import { ChangeEvent, FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "@/context/ThemeContext";
-
-const WHATSAPP_PHONE =
-  process.env.NEXT_PUBLIC_WHATSAPP_PHONE ?? "Pronto disponible";
+import { buildInstagramDmLink } from "@/lib/instagram";
 
 interface FormState {
   name: string;
@@ -18,14 +16,15 @@ interface FormState {
 
 export default function ContactPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const [form, setForm] = useState<FormState>({
+  const [form, setForm] = useState<FormState>(() => ({
     name: "",
     email: "",
     phone: "",
-    subject: "",
-    message: "",
-  });
+    subject: searchParams.get("subject") ?? "",
+    message: searchParams.get("message") ?? "",
+  }));
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -33,6 +32,7 @@ export default function ContactPage() {
 
   const { theme } = useTheme();
   const isDark = theme === "dark";
+  const instagramDmLink = buildInstagramDmLink();
 
   const canSubmit = useMemo(() => {
     return (
@@ -182,8 +182,7 @@ export default function ContactPage() {
                       Atención personalizada
                     </h3>
                     <p className={`mt-3 text-sm ${mutedText}`}>
-                      Lunes a sábados de 10 a 20 hs (GMT-3). Coordinamos
-                      encuentros privados en nuestro showroom.
+                      Lunes a sábados de 10 a 20 hs (GMT-3).
                     </p>
                   </div>
 
@@ -192,13 +191,14 @@ export default function ContactPage() {
                       Línea directa
                     </h3>
                     <p className={`mt-3 text-sm ${mutedText}`}>
-                      Escribinos por {""}
+                      Escribinos por DM en{" "}
                       <a
-                        href={`https://wa.me/${WHATSAPP_PHONE}`}
+                        href={instagramDmLink}
                         className="text-gold underline"
                         target="_blank"
+                        rel="noopener noreferrer"
                       >
-                        WhatsApp
+                        Instagram
                       </a>{" "}
                       o llená el formulario para coordinar.
                     </p>

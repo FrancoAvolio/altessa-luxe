@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 
 import ProductGallery from "@/components/ProductGallery";
-import { buildWhatsAppLink } from "@/lib/whatsapp";
+import { buildInstagramDmLink } from "@/lib/instagram";
 import {
   fetchProduct,
   fetchProductImages,
@@ -85,6 +85,12 @@ export default function ProductDetailPage({ params }: PageProps) {
   }
 
   const title = product.name;
+  const instagramDmUrl = buildInstagramDmLink();
+  const contactSubject = encodeURIComponent(`Consulta sobre ${product.name}`);
+  const contactMessage = encodeURIComponent(
+    `Hola, me interesa este producto: ${product.name}.`
+  );
+  const contactHref = `/contact?subject=${contactSubject}&message=${contactMessage}`;
 
   const isVideo = (u: string) =>
     /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u || "") ||
@@ -143,15 +149,19 @@ export default function ProductDetailPage({ params }: PageProps) {
                 Volver
               </button>
               <a
-                href={buildWhatsAppLink(
-                  `Hola! Me interesa este producto: ${product.name}`
-                )}
+                href={instagramDmUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-6 py-3 rounded-lg font-semibold border border-[#25D366] text-[#25D366] hover:bg-[#25D366] hover:text-white transition-colors"
+                className="px-6 py-3 rounded-lg font-semibold bg-gradient-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] text-white transition-colors"
               >
-                Consultar por este producto
+                Consultar por Instagram
               </a>
+              <Link
+                href={contactHref}
+                className="px-6 py-3 rounded-lg font-semibold border border-[#d5aa3b] text-[#d5aa3b] hover:bg-[#d5aa3b] hover:text-black transition-colors"
+              >
+                Consultar por correo
+              </Link>
             </div>
           </div>
         </div>
