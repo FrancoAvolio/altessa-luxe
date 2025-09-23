@@ -21,8 +21,9 @@ export default function Footer() {
       await signIn(email, password);
       setShowAdminLogin(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Error al iniciar sesion';
-      setError(message || 'Error al iniciar sesion');
+      const message =
+        err instanceof Error ? err.message : "Error al iniciar sesion";
+      setError(message || "Error al iniciar sesion");
     } finally {
       setLoading(false);
     }
@@ -32,7 +33,7 @@ export default function Footer() {
     try {
       await adminSignOut();
     } catch (err) {
-      console.error('Error al cerrar sesion:', err);
+      console.error("Error al cerrar sesion:", err);
     }
   };
 
@@ -42,10 +43,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1">
             <h3 className="text-xl font-bold mb-4 font-fancy text-gold">
-              Relojes
+              Productos
             </h3>
             <p className="text-white/80">
-              Tu tienda de confianza para relojes de calidad.
+              Tu tienda de confianza para productos de calidad.
             </p>
           </div>
           <div>
@@ -53,10 +54,11 @@ export default function Footer() {
               Categorías
             </h4>
             <ul className="space-y-2 text-white/80">
-              <li>Relojes Deportivos</li>
-              <li>Relojes Clásicos</li>
-              <li>Relojes Inteligentes</li>
-              <li>Relojes de Bolsillo</li>
+              <li>Relojes</li>
+              <li>Bolsos</li>
+              <li>Camperas</li>
+              <li>Billeteras</li>
+              <li>Portadocumentos</li>
             </ul>
           </div>
           <div>
@@ -81,10 +83,7 @@ export default function Footer() {
               >
                 <FaInstagram className="h-6 w-6 cursor-pointer text-gold hover:text-white/80 underline underline-offset-2" />
               </Link>
-              <Link
-                href="https://www.tiktok.com/@altessa.luxe"
-                target="_blank"
-              >
+              <Link href="https://www.tiktok.com/@altessa.luxe" target="_blank">
                 <FaTiktok className="h-6 w-6 cursor-pointer text-gold hover:text-white/80 underline underline-offset-2" />
               </Link>
             </div>

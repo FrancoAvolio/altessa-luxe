@@ -1,18 +1,17 @@
-﻿'use client';
+﻿"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useAdmin } from '../context/AdminContext';
-import { Button } from './ui/button';
-import { Card, CardContent } from './ui/card';
-import { imgPresets } from '@/lib/images';
+import Image from "next/image";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAdmin } from "../context/AdminContext";
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
+import { imgPresets } from "@/lib/images";
 
 interface Product {
   id?: number;
   name: string;
   description: string;
-  price: number;
   image_url: string;
   images?: string[];
 }
@@ -24,16 +23,22 @@ interface ProductCardProps {
 }
 
 const isVideo = (u: string) =>
-  /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u) || u.startsWith('data:video');
+  /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u) || u.startsWith("data:video");
 
-export default function ProductCard({ product, onEdit, onDelete }: ProductCardProps) {
+export default function ProductCard({
+  product,
+  onEdit,
+  onDelete,
+}: ProductCardProps) {
   const { isAdmin } = useAdmin();
   const [index, setIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [inView, setInView] = useState(false);
   const [isHoveringMedia, setIsHoveringMedia] = useState(false);
   const [isImageLoading, setIsImageLoading] = useState(true);
-  const [loadedSources, setLoadedSources] = useState<Record<string, boolean>>({});
+  const [loadedSources, setLoadedSources] = useState<Record<string, boolean>>(
+    {}
+  );
   const ref = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -47,16 +52,19 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
 
   const mediaCount = mediaSources.length;
   const next = () => setIndex((prev) => (prev + 1) % Math.max(mediaCount, 1));
-  const prev = () => setIndex((prev) => (prev - 1 + Math.max(mediaCount, 1)) % Math.max(mediaCount, 1));
+  const prev = () =>
+    setIndex(
+      (prev) => (prev - 1 + Math.max(mediaCount, 1)) % Math.max(mediaCount, 1)
+    );
 
-  const href = product.id ? `/products/${product.id}` : '#';
+  const href = product.id ? `/products/${product.id}` : "#";
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const io = new IntersectionObserver(
       (entries) => setInView(entries[0]?.isIntersecting ?? false),
-      { rootMargin: '200px 0px' }
+      { rootMargin: "200px 0px" }
     );
     io.observe(el);
     return () => io.disconnect();
@@ -71,7 +79,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
   }, [mediaCount]);
 
   useEffect(() => {
-    if (!isVideo(mediaSources[index] ?? '')) {
+    if (!isVideo(mediaSources[index] ?? "")) {
       return;
     }
     const video = videoRef.current;
@@ -89,8 +97,12 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
   }, [mediaSources, index, inView, isHoveringMedia]);
 
   const current = mediaSources[index];
-  const poster = mediaSources[0] && !isVideo(mediaSources[0]) ? imgPresets.thumb(mediaSources[0]) : undefined;
-  const imgForCard = current && !isVideo(current) ? imgPresets.card(current) : current;
+  const poster =
+    mediaSources[0] && !isVideo(mediaSources[0])
+      ? imgPresets.thumb(mediaSources[0])
+      : undefined;
+  const imgForCard =
+    current && !isVideo(current) ? imgPresets.card(current) : current;
 
   useEffect(() => {
     setImageError(false);
@@ -102,7 +114,10 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
   }, [current, loadedSources]);
 
   return (
-    <Card ref={ref} className="h-full flex flex-col overflow-hidden relative hover:shadow-xl transition-shadow duration-300 glow-card">
+    <Card
+      ref={ref}
+      className="h-full flex flex-col overflow-hidden relative hover:shadow-xl transition-shadow duration-300 glow-card"
+    >
       <Link href={href} className="block">
         <div
           className="relative h-72 bg-gradient-to-br from-white via-white to-neutral-200"
@@ -133,7 +148,9 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
                   className="object-cover"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-black/60">Video</div>
+                <div className="flex items-center justify-center h-full text-black/60">
+                  Video
+                </div>
               )
             ) : (
               <>
@@ -160,7 +177,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
                     });
                     setIsImageLoading(false);
                   }}
-                  loading={index === 0 ? 'eager' : 'lazy'}
+                  loading={index === 0 ? "eager" : "lazy"}
                   sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
                 {isImageLoading && (
@@ -170,7 +187,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
             )
           ) : (
             <div className="flex items-center justify-center h-full text-black/60">
-              {imageError ? 'Imagen no disponible' : 'Sin imagen'}
+              {imageError ? "Imagen no disponible" : "Sin imagen"}
             </div>
           )}
 
@@ -178,7 +195,10 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
             <>
               <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1">
                 {mediaSources.map((_, i) => (
-                  <span key={i} className={`h-1.5 w-1.5 rounded-full ${index === i ? 'bg-white' : 'bg-white/60'}`} />
+                  <span
+                    key={i}
+                    className={`h-1.5 w-1.5 rounded-full ${index === i ? "bg-white" : "bg-white/60"}`}
+                  />
                 ))}
               </div>
               <div className="absolute inset-y-0 left-0 flex items-center">
@@ -191,7 +211,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
                     prev();
                   }}
                 >
-                  {'<'}
+                  {"<"}
                 </Button>
               </div>
               <div className="absolute inset-y-0 right-0 flex items-center">
@@ -204,7 +224,7 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
                     next();
                   }}
                 >
-                  {'>'}
+                  {">"}
                 </Button>
               </div>
             </>
@@ -213,17 +233,30 @@ export default function ProductCard({ product, onEdit, onDelete }: ProductCardPr
       </Link>
       <CardContent className="p-5 flex flex-col flex-1">
         <Link href={href} className="block">
-          <h3 className="font-semibold text-lg text-black mb-1 hover:underline line-clamp-2">{product.name}</h3>
-          {product.description && <p className="text-black/70 text-sm line-clamp-1">{product.description}</p>}
+          <h3 className="font-semibold text-lg text-black mb-1 hover:underline line-clamp-2">
+            {product.name}
+          </h3>
+          {product.description && (
+            <p className="text-black/70 text-sm line-clamp-1">
+              {product.description}
+            </p>
+          )}
         </Link>
         <div className="mt-auto">
-          <p className="text-xl font-bold text-black">${product.price}</p>
           {isAdmin && (
             <div className="flex space-x-2 mt-2">
-              <Button onClick={() => onEdit(product)} className="flex-1 cursor-pointer" variant="secondary">
+              <Button
+                onClick={() => onEdit(product)}
+                className="flex-1 cursor-pointer"
+                variant="secondary"
+              >
                 Editar
               </Button>
-              <Button onClick={() => product.id && onDelete(product.id)} className="flex-1 cursor-pointer" variant="destructive">
+              <Button
+                onClick={() => product.id && onDelete(product.id)}
+                className="flex-1 cursor-pointer"
+                variant="destructive"
+              >
                 Eliminar
               </Button>
             </div>

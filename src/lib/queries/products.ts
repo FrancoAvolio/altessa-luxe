@@ -1,11 +1,11 @@
-// lib/queries/products.ts
 import { supabase } from "@/supabase/supabase";
 
 export interface DBProduct {
   id: number;
   name: string;
   description: string | null;
-  price: number | null;
+  price?: number | null;
+  subcategory: string | null;
   image_url: string | null;
   category?: string | null;
 }

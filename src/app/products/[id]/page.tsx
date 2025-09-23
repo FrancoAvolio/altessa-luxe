@@ -42,7 +42,6 @@ export default function ProductDetailPage({ params }: PageProps) {
   const id = Number(resolvedParams.id);
   const router = useRouter();
 
-  // Producto principal
   const {
     data: product,
     isLoading: productLoading,
@@ -53,14 +52,12 @@ export default function ProductDetailPage({ params }: PageProps) {
     enabled: !!id,
   });
 
-  // Imágenes
   const { data: images = [], isLoading: imagesLoading } = useQuery<string[]>({
     queryKey: ["productImages", id],
     queryFn: () => fetchProductImages(id),
     enabled: !!id,
   });
 
-  // Relacionados
   const { data: related = [] } = useQuery<RelatedProduct[]>({
     queryKey: ["relatedProducts", id],
     queryFn: () => fetchRelatedProducts(product!),
@@ -92,6 +89,20 @@ export default function ProductDetailPage({ params }: PageProps) {
   );
   const contactHref = `/contact?subject=${contactSubject}&message=${contactMessage}`;
 
+  const crumbs: Array<{ label: string; href?: string }> = [
+    { label: "Inicio", href: "/" },
+  ];
+
+  if (product.category) {
+    crumbs.push({ label: product.category });
+  }
+
+  if (product.subcategory) {
+    crumbs.push({ label: product.subcategory });
+  }
+
+  crumbs.push({ label: title });
+
   const isVideo = (u: string) =>
     /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(u || "") ||
     (u || "").startsWith("data:video");
@@ -99,49 +110,62 @@ export default function ProductDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen page-surface text-foreground">
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Breadcrumb */}
-        <div className="mb-4 text-sm text-muted">
-          <Link href="/" className="hover:underline">
-            Inicio
-          </Link>
-          <span className="mx-2">/</span>
-          {product.category ? (
-            <span className="capitalize">{product.category}</span>
-          ) : (
-            <span>Producto</span>
-          )}
-          <span className="mx-2">/</span>
-          <span className="text-foreground">{title}</span>
+        <div className="mb-4 text-sm text-muted flex flex-wrap items-center gap-1">
+          {crumbs.map((crumb, index) => {
+            const isLast = index === crumbs.length - 1;
+            const content = crumb.href ? (
+              <Link
+                key={crumb.label}
+                href={crumb.href}
+                className="hover:underline"
+              >
+                {crumb.label}
+              </Link>
+            ) : (
+              <span
+                key={crumb.label}
+                className={isLast ? "text-foreground" : "capitalize"}
+              >
+                {crumb.label}
+              </span>
+            );
+
+            return (
+              <span
+                key={`${crumb.label}-${index}`}
+                className="flex items-center gap-1"
+              >
+                {content}
+                {!isLast && <span className="mx-1">/</span>}
+              </span>
+            );
+          })}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Galería */}
           <div>
             <ProductGallery images={images} alt={title} />
           </div>
 
-          {/* Detalles */}
-          <div className="text-foreground">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">
-              {product.name}
-            </h1>
+          <div className="text-foreground space-y-3">
+            <h1 className="text-2xl md:text-3xl font-bold">{product.name}</h1>
             {product.category && (
-              <div className="text-sm text-muted mb-3">
-                Categoria: {product.category}
+              <div className="text-sm text-muted">
+                Categoría: {product.category}
               </div>
             )}
-            {product.price !== null && (
-              <div className="text-2xl font-semibold mb-4">
-                ${product.price}
+            {product.subcategory && (
+              <div className="text-sm text-muted">
+                Subcategoría {product.subcategory}
               </div>
             )}
             {product.description && (
-              <p className="text-muted-strong leading-relaxed whitespace-pre-wrap mb-6">
+              <p className="text-muted-strong leading-relaxed whitespace-pre-wrap mt-4">
                 {product.description}
               </p>
             )}
 
-            <div className="flex items-center gap-3 mt-4">
+            <div className="flex items-center gap-3 mt-6 flex-wrap">
               <button
                 className="btn-black px-6 py-3 rounded-lg font-semibold cursor-pointer"
                 onClick={() => router.back()}
@@ -166,11 +190,10 @@ export default function ProductDetailPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Relacionados */}
         {related.length > 0 && (
           <section className="mt-12">
             <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4">
-              Tambien podria interesarte
+              Tambien podría interesarte
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {related.map((p) => {
@@ -206,13 +229,19 @@ export default function ProductDetailPage({ params }: PageProps) {
                         </div>
                       )}
                     </div>
-                    <div className="mt-2">
+                    <div className="mt-2 space-y-1">
                       <div className="text-foreground font-semibold leading-tight group-hover:underline line-clamp-1">
                         {p.name}
                       </div>
-                      {p.price !== null && (
-                        <div className="text-muted-strong">${p.price}</div>
-                      )}
+                      {p.subcategory ? (
+                        <div className="text-xs uppercase tracking-wide text-muted">
+                          {p.subcategory}
+                        </div>
+                      ) : p.category ? (
+                        <div className="text-xs uppercase tracking-wide text-muted">
+                          {p.category}
+                        </div>
+                      ) : null}
                     </div>
                   </Link>
                 );

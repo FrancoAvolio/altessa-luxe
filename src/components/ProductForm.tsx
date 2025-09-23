@@ -12,7 +12,7 @@ interface Product {
   id?: number;
   name: string;
   description: string;
-  price: number;
+  price?: number;
   image_url: string;
   images?: string[];
   category?: string | null;
@@ -22,7 +22,7 @@ type DbProductRow = {
   id: number;
   name: string;
   description: string | null;
-  price: number | null;
+  price?: number | null;
   image_url: string | null;
   category: string | null;
 };
