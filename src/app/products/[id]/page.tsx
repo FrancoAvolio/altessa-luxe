@@ -204,7 +204,7 @@ export default function ProductDetailPage({ params }: PageProps) {
                     href={`/products/${p.id}`}
                     className="group block"
                   >
-                    <div className="relative h-44 bg-panel border border-panel rounded-lg overflow-hidden">
+                    <div className="relative h-64 bg-panel border border-panel rounded-lg overflow-hidden">
                       {cover ? (
                         isVideo(cover) ? (
                           <video

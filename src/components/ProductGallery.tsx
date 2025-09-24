@@ -12,7 +12,7 @@ interface ProductGalleryProps {
 interface Size2D { w: number; h: number; }
 interface RenderedSize extends Size2D { offsetX: number; offsetY: number; }
 
-const ZOOM_SCALE = 1.6;
+const ZOOM_SCALE = 1.3;
 const LENS_SIZE = 100;
 
 const isVideo = (u: string) =>
@@ -26,6 +26,7 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
   const [naturalSize, setNaturalSize] = useState<Size2D>({ w: 0, h: 0 });
   const [renderedSize, setRenderedSize] = useState<RenderedSize>({ w: 1, h: 1, offsetX: 0, offsetY: 0 });
   const [hiResUrl, setHiResUrl] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState<Record<number, boolean>>({});
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const raw = images[active] || "";
@@ -41,7 +42,18 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
     setLensPos({ x: 0, y: 0 });
     setNaturalSize({ w: 0, h: 0 });
     setHiResUrl(null);
-  }, [raw]);
+    // Set loading state for the active image
+    setImageLoading(prev => ({ ...prev, [active]: true }));
+  }, [active, raw]);
+
+  // Initialize loading states for all images on mount
+  useEffect(() => {
+    const initialLoading: Record<number, boolean> = {};
+    images.forEach((_, index) => {
+      initialLoading[index] = true; // Assume all start loading
+    });
+    setImageLoading(initialLoading);
+  }, []);
 
   // Observer de tamaño del contenedor
   useEffect(() => {
@@ -87,7 +99,7 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
 
   const containerStyle = useMemo<React.CSSProperties>(() => ({
     width: '100%',
-    height: 'clamp(280px, 55vw, 400px)',
+    height: 'clamp(400px, 80vw, 600px)',
   }), []);
 
   // Fondo del lente: usa hiRes cuando ya esté cargada; si no, la mid
@@ -157,6 +169,9 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
               controls
               playsInline
               preload="metadata"
+              muted
+              loop
+              autoPlay
               onLoadedMetadata={(ev) => {
                 const v = ev.currentTarget;
                 if (v.videoWidth && v.videoHeight) {
@@ -177,6 +192,8 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
               onLoadingComplete={({ naturalWidth, naturalHeight }) => {
                 if (naturalWidth && naturalHeight) {
                   setNaturalSize({ w: naturalWidth, h: naturalHeight });
+                  // Mark image as loaded
+                  setImageLoading(prev => ({ ...prev, [active]: false }));
                 }
               }}
             />
@@ -185,6 +202,11 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
           <div className="absolute inset-0 flex items-center justify-center text-muted">
             Sin imagen
           </div>
+        )}
+
+        {/* Loading overlay for main image */}
+        {imageLoading[active] && displaySrc && !video && (
+          <div className="absolute inset-0 pointer-events-none bg-neutral-200/70 animate-pulse" />
         )}
 
         {showLens && !video && displaySrc && (
@@ -228,4 +250,3 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
     </div>
   );
 }
-

@@ -13,7 +13,12 @@ import {
   fetchProductsWithImages,
   type ProductWithImages,
 } from "@/lib/products";
-import { fetchCategoryRows, type CategoryRow } from "@/lib/categories";
+import {
+  fetchCategoriesWithSubcategories,
+  fetchCategoryRows,
+  type CategoryWithSubcategories,
+  type CategoryRow,
+} from "@/lib/categories";
 import { queryKeys } from "@/lib/queryKeys";
 
 type Product = ProductWithImages;
@@ -26,6 +31,14 @@ const productsQueryFn = async (): Promise<Product[]> => {
 
 const categoryRowsQueryFn = async (): Promise<CategoryRow[]> => {
   const { items, error } = await fetchCategoryRows();
+  if (error) throw new Error(error);
+  return items;
+};
+
+const categoriesWithSubcategoriesQueryFn = async (): Promise<
+  CategoryWithSubcategories[]
+> => {
+  const { items, error } = await fetchCategoriesWithSubcategories();
   if (error) throw new Error(error);
   return items;
 };
@@ -83,6 +96,9 @@ export default function HomeClient({
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 12;
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
+    new Set()
+  );
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [error, setError] = useState<string | null>(initialError ?? null);
 
@@ -102,6 +118,15 @@ export default function HomeClient({
     gcTime: 10 * 60_000,
   });
 
+  const categoriesWithSubcategoriesQuery = useQuery<
+    CategoryWithSubcategories[]
+  >({
+    queryKey: [queryKeys.categoryRows, "with-subcategories"],
+    queryFn: categoriesWithSubcategoriesQueryFn,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+  });
+
   const products = useMemo(
     () => productsQuery.data ?? [],
     [productsQuery.data]
@@ -114,7 +139,62 @@ export default function HomeClient({
     () => categoryRows.map((row) => row.name),
     [categoryRows]
   );
+  const categoriesWithSubcategories = useMemo(() => {
+    // Build categories with subcategories from product data
+    const categoryMap = new Map<string, Set<string>>();
+    products.forEach((product) => {
+      if (product.category && product.subcategory) {
+        if (!categoryMap.has(product.category)) {
+          categoryMap.set(product.category, new Set());
+        }
+        categoryMap.get(product.category)!.add(product.subcategory);
+      }
+    });
+
+    // Convert to the expected format for compatibility
+    const result: CategoryWithSubcategories[] = [];
+    categoryMap.forEach((subs, catName) => {
+      result.push({
+        id: categories.find((c) => c === catName)
+          ? categories.indexOf(catName) + 1
+          : -1, // dummy id
+        name: catName,
+        subcategories: Array.from(subs).map((subName) => ({
+          id: -1, // dummy id
+          name: subName,
+          category_id: -1,
+        })),
+      });
+    });
+
+    // Also include categories without subcategories if they have products
+    products.forEach((product) => {
+      if (product.category && !categoryMap.has(product.category)) {
+        result.push({
+          id: categories.find((c) => c === product.category)
+            ? categories.indexOf(product.category) + 1
+            : -1,
+          name: product.category,
+          subcategories: [],
+        });
+      }
+    });
+
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  }, [products, categories]);
   const showSkeleton = productsQuery.status === "pending";
+
+  const toggleCategoryExpansion = (categoryName: string) => {
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryName)) {
+        newSet.delete(categoryName);
+      } else {
+        newSet.add(categoryName);
+      }
+      return newSet;
+    });
+  };
 
   useEffect(() => {
     const queryError =
@@ -166,17 +246,24 @@ export default function HomeClient({
     };
   }, [queryClient]);
 
-  const filtered = useMemo(
-    () =>
-      selectedCategories.length
-        ? products.filter(
-            (p) =>
-              (p.category ?? "").toString() &&
-              selectedCategories.includes((p.category ?? "").toString())
-          )
-        : products,
-    [products, selectedCategories]
-  );
+  const filtered = useMemo(() => {
+    if (!selectedCategories.length) return products;
+
+    return products.filter((p) => {
+      if (!p.category) return false;
+
+      return selectedCategories.some((selected) => {
+        if (selected.includes(":")) {
+          // Formato: "Categoría:Subcategoría"
+          const [catName, subName] = selected.split(":");
+          return p.category === catName && p.subcategory === subName;
+        } else {
+          // Solo categoría
+          return p.category === selected;
+        }
+      });
+    });
+  }, [products, selectedCategories]);
 
   useEffect(() => {
     const total = Math.max(
@@ -373,57 +460,110 @@ export default function HomeClient({
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <aside className="lg:col-span-1 bg-white border border-gold rounded-lg shadow p-4 h-fit">
             <h3 className="font-semibold mb-3 text-black">Categorías</h3>
-            {(() => {
-              const usedSet = new Set<string>();
-              products.forEach((p) => {
-                const c = (p.category ?? "").toString().trim();
-                if (c) usedSet.add(c);
-              });
-              const inferred = Array.from(usedSet);
-              const cats = (
-                categories.length
-                  ? categories.filter((c) => usedSet.has(c))
-                  : inferred
-              ).sort((a, b) => a.localeCompare(b));
-              return (
-                <ul className="space-y-1">
-                  <li>
-                    <button
-                      onClick={() => {
-                        setSelectedCategories([]);
-                        setCurrentPage(1);
-                      }}
-                      className={`w-full text-left px-2 py-1 rounded border transition-colors cat-btn ${selectedCategories.length === 0 ? "active" : ""}`}
-                    >
-                      Todos ({products.length})
-                    </button>
-                  </li>
-                  {cats.map((c) => (
-                    <li key={c}>
-                      <button
-                        onClick={() => {
-                          setSelectedCategories((prev) => {
-                            const exists = prev.includes(c);
-                            return exists
-                              ? prev.filter((x) => x !== c)
-                              : [...prev, c];
-                          });
-                          setCurrentPage(1);
-                        }}
-                        className={`w-full text-left px-2 py-1 rounded border transition-colors cat-btn ${selectedCategories.includes(c) ? "active" : ""}`}
-                      >
-                        {c} (
-                        {
-                          products.filter((p) => (p.category ?? "") === c)
-                            .length
-                        }
-                        )
-                      </button>
+            <ul className="space-y-1">
+              {/* Todos los productos */}
+              <li>
+                <button
+                  onClick={() => {
+                    setSelectedCategories([]);
+                    setCurrentPage(1);
+                  }}
+                  className={`w-full text-left px-2 py-1 rounded border transition-colors cat-btn ${selectedCategories.length === 0 ? "active" : ""}`}
+                >
+                  Todos ({products.length})
+                </button>
+              </li>
+
+              {/* Categorías con subcategorías */}
+              {categoriesWithSubcategories
+                .filter((cat) => products.some((p) => p.category === cat.name)) // Solo mostrar categorías que tienen productos
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((cat) => {
+                  const categoryProducts = products.filter(
+                    (p) => p.category === cat.name
+                  );
+                  const hasSubcategories = cat.subcategories.length > 0;
+
+                  return (
+                    <li key={cat.name}>
+                      {/* Categoría principal */}
+                      <div className="flex items-center">
+                        <button
+                          onClick={() => {
+                            if (hasSubcategories) {
+                              toggleCategoryExpansion(cat.name);
+                            } else {
+                              setSelectedCategories([cat.name]);
+                              setCurrentPage(1);
+                            }
+                          }}
+                          className={`flex-1 text-left px-2 py-1 rounded border transition-colors cat-btn flex justify-between items-center ${
+                            selectedCategories.includes(cat.name) &&
+                            selectedCategories.length === 1
+                              ? "active"
+                              : ""
+                          }`}
+                        >
+                          <span>
+                            {cat.name} ({categoryProducts.length})
+                          </span>
+                          {hasSubcategories && (
+                            <span className="text-xs ml-2">
+                              {expandedCategories.has(cat.name) ? "▼" : "▶"}
+                            </span>
+                          )}
+                        </button>
+                        {hasSubcategories && (
+                          <button
+                            onClick={() => {
+                              setSelectedCategories([cat.name]);
+                              setCurrentPage(1);
+                            }}
+                            className="ml-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border text-gray-600"
+                            title={`Filtrar solo por ${cat.name}`}
+                          >
+                            Todos
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Subcategorías */}
+                      {expandedCategories.has(cat.name) && hasSubcategories && (
+                        <ul className="ml-4 mt-1 space-y-1">
+                          {cat.subcategories.map((sub) => {
+                            const subcategoryProducts = products.filter(
+                              (p) =>
+                                p.category === cat.name &&
+                                p.subcategory === sub.name
+                            );
+                            return (
+                              <li key={sub.name}>
+                                <button
+                                  onClick={() => {
+                                    setSelectedCategories([
+                                      `${cat.name}:${sub.name}`,
+                                    ]);
+                                    setCurrentPage(1);
+                                  }}
+                                  className={`w-full text-left px-3 py-1 text-sm rounded border transition-colors cat-btn ${
+                                    selectedCategories.includes(
+                                      `${cat.name}:${sub.name}`
+                                    )
+                                      ? "active"
+                                      : ""
+                                  }`}
+                                >
+                                  └ {sub.name} ({subcategoryProducts.length})
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
                     </li>
-                  ))}
-                </ul>
-              );
-            })()}
+                  );
+                })}
+            </ul>
           </aside>
 
           <main className="lg:col-span-3 space-y-8">

@@ -1,4 +1,4 @@
-﻿import { supabase } from "@/supabase/supabase";
+import { supabase } from "@/supabase/supabase";
 import { fetchCategoryNames } from "@/lib/categories";
 
 export interface ProductWithImages {
@@ -8,6 +8,7 @@ export interface ProductWithImages {
   image_url: string;
   images?: string[];
   category?: string | null;
+  subcategory?: string | null;
 }
 
 type ProductsResponse = {
@@ -24,9 +25,9 @@ type ProductQueryRow = {
   id: number | null;
   name: string | null;
   description: string | null;
-  price?: number | null;
   image_url: string | null;
   category: string | null;
+  subcategory: string | null;
   product_images?: Array<{
     url: string | null;
     position: number | null;
@@ -42,9 +43,9 @@ export async function fetchProductsWithImages(): Promise<ProductsResponse> {
           id,
           name,
           description,
-          price,
           image_url,
           category,
+          subcategory,
           product_images ( url, position )
         `
       )
@@ -62,13 +63,15 @@ export async function fetchProductsWithImages(): Promise<ProductsResponse> {
       const name = typeof raw.name === "string" ? raw.name : "";
       const description =
         typeof raw.description === "string" ? raw.description : "";
-      const price =
-        typeof raw.price === "number" ? raw.price : Number(raw.price ?? 0);
       const cover = typeof raw.image_url === "string" ? raw.image_url : "";
       const category =
         typeof raw.category === "string"
           ? raw.category
           : (raw.category ?? null);
+      const subcategory =
+        typeof raw.subcategory === "string"
+          ? raw.subcategory
+          : (raw.subcategory ?? null);
 
       const joined = Array.isArray(raw.product_images)
         ? raw.product_images
@@ -93,6 +96,7 @@ export async function fetchProductsWithImages(): Promise<ProductsResponse> {
         image_url: cover,
         images,
         category,
+        subcategory,
       } satisfies ProductWithImages;
     });
 

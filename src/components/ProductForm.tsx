@@ -7,15 +7,16 @@ import { uploadImages, deleteImage } from '../supabase/storage';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { fetchCategoriesWithSubcategories, type CategoryWithSubcategories } from '@/lib/categories';
 
 interface Product {
   id?: number;
   name: string;
   description: string;
-  price?: number;
   image_url: string;
   images?: string[];
   category?: string | null;
+  subcategory?: string | null;
 }
 
 type DbProductRow = {
@@ -39,9 +40,9 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
   const [formData, setFormData] = useState<Product>({
     name: product?.name || '',
     description: product?.description || '',
-    price: product?.price || 0,
     image_url: product?.image_url || '',
-    category: product?.category ?? ''
+    category: product?.category ?? '',
+    subcategory: product?.subcategory ?? ''
   });
 
   const [existingImages, setExistingImages] = useState<string[]>(
@@ -54,6 +55,7 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
   const [newUrls, setNewUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<string[]>(categories ?? []);
+  const [categoriesWithSubcategories, setCategoriesWithSubcategories] = useState<CategoryWithSubcategories[]>([]);
 
   useEffect(() => {
     if (product) {
@@ -65,14 +67,25 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
       setFormData({
         name: product.name || '',
         description: product.description || '',
-        price: product.price || 0,
         image_url: product.image_url || '',
-        category: product.category ?? ''
+        category: product.category ?? '',
+        subcategory: product.subcategory ?? ''
       });
     } else {
       setExistingImages([]);
     }
   }, [product]);
+
+  useEffect(() => {
+    // Load categories with subcategories
+    const loadCategories = async () => {
+      const { items, error } = await fetchCategoriesWithSubcategories();
+      if (!error) {
+        setCategoriesWithSubcategories(items);
+      }
+    };
+    loadCategories();
+  }, []);
 
   useEffect(() => {
     const fromProps = (categories ?? []).map((entry) => entry?.toString().trim() ?? "").filter((value) => value.length > 0);
@@ -84,9 +97,22 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
     setCategoryOptions(Array.from(merged).sort((a, b) => a.localeCompare(b)));
   }, [categories, formData.category]);
 
+  // When category changes, reset subcategory if it's not available in the new category
+  useEffect(() => {
+    if (formData.category && formData.subcategory) {
+      const selectedCat = categoriesWithSubcategories.find(cat => cat.name === formData.category);
+      if (selectedCat) {
+        const hasSubcategory = selectedCat.subcategories.some(sub => sub.name === formData.subcategory);
+        if (!hasSubcategory) {
+          setFormData(prev => ({ ...prev, subcategory: '' }));
+        }
+      }
+    }
+  }, [formData.category, formData.subcategory, categoriesWithSubcategories]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: name === 'price' ? parseFloat(value) : value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,9 +181,9 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
           .update({
             name: formData.name,
             description: formData.description,
-            price: formData.price,
             image_url: finalImages[0] || '',
             category: normalizedCategory,
+            subcategory: (formData.subcategory ?? '').toString().trim() || null,
           })
           .eq('id', pid)
           .select()
@@ -173,10 +199,10 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
           id: updatedRow.id,
           name: updatedRow.name ?? formData.name,
           description: updatedRow.description ?? '',
-          price: typeof updatedRow.price === 'number' ? updatedRow.price : formData.price,
           image_url: finalImages[0] ?? updatedRow.image_url ?? '',
           images: finalImages,
           category: updatedRow.category ?? normalizedCategory,
+          subcategory: formData.subcategory,
         };
 
         onSave(normalized);
@@ -184,7 +210,13 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
         // Crear producto primero
         const { data: created, error: insErr } = await supabase
           .from('products')
-          .insert([{ name: formData.name, description: formData.description, price: formData.price, image_url: '', category: normalizedCategory }])
+          .insert([{
+            name: formData.name,
+            description: formData.description,
+            image_url: '',
+            category: normalizedCategory,
+            subcategory: (formData.subcategory ?? '').toString().trim() || null
+          }])
           .select()
           .single();
         if (insErr) throw insErr;
@@ -204,10 +236,10 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
           id: pid,
           name: createdRow.name ?? formData.name,
           description: createdRow.description ?? '',
-          price: typeof createdRow.price === 'number' ? createdRow.price : formData.price,
           image_url: cover || createdRow.image_url || '',
           images: finalImages.length ? finalImages : toInsert.map((t) => t.url),
           category: createdRow.category ?? normalizedCategory,
+          subcategory: formData.subcategory,
         };
 
         onSave(normalized);
@@ -265,9 +297,40 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
             <p className="text-xs text-black/70 mt-1">Selecciona una existente o deja vacío.</p>
           </div>
           <div className="mb-4">
-            <Label className="mb-1 block">Precio</Label>
-            <Input type="number" name="price" value={formData.price} onChange={handleChange} step="0.01" placeholder="0.00" required />
+            <Label className="mb-1 block">Subcategoría</Label>
+            {(() => {
+              const selectedCat = categoriesWithSubcategories.find(cat => cat.name === formData.category);
+              const subcategoryOptions = selectedCat?.subcategories || [];
+
+              return subcategoryOptions.length > 0 ? (
+                <select
+                  name="subcategory"
+                  value={formData.subcategory ?? ''}
+                  onChange={(e) => setFormData((p) => ({ ...p, subcategory: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gold rounded-md text-black focus:outline-none focus:ring-2 focus:ring-[var(--gold)] bg-white"
+                >
+                  <option value="">Sin subcategoría</option>
+                  {subcategoryOptions.map((sub) => (
+                    <option key={sub.id} value={sub.name}>{sub.name}</option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  name="subcategory"
+                  value={formData.subcategory ?? ''}
+                  onChange={handleChange}
+                  placeholder="Escribe una subcategoría (opcional)"
+                />
+              );
+            })()}
+            <p className="text-xs text-black/70 mt-1">
+              {formData.category ?
+                "Selecciona una subcategoría existente o deja vacío." :
+                "Primero selecciona una categoría para ver sus subcategorías."
+              }
+            </p>
           </div>
+
 
           <div className="mb-4">
             <Label className="mb-1 block">Imágenes/Videos del producto</Label>
@@ -348,5 +411,3 @@ export default function ProductForm({ product, onSave, onCancel, categories }: P
     </div>
   );
 }
-
-

@@ -85,7 +85,7 @@ export default function ProductCard({
     const video = videoRef.current;
     if (!video) return;
 
-    if (inView && isHoveringMedia) {
+    if (inView) {
       const playPromise = video.play();
       if (playPromise) {
         playPromise.catch(() => {});
@@ -94,13 +94,10 @@ export default function ProductCard({
       video.pause();
       video.currentTime = 0;
     }
-  }, [mediaSources, index, inView, isHoveringMedia]);
+  }, [mediaSources, index, inView]);
 
   const current = mediaSources[index];
-  const poster =
-    mediaSources[0] && !isVideo(mediaSources[0])
-      ? imgPresets.thumb(mediaSources[0])
-      : undefined;
+  const poster = undefined; // Don't show poster to avoid image flashing when video starts
   const imgForCard =
     current && !isVideo(current) ? imgPresets.card(current) : current;
 
