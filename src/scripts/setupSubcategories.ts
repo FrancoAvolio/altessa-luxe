@@ -53,7 +53,7 @@ async function setupSubcategoriesTable() {
     }
 
     // Verify the table was created
-    const { data: tableInfo, error: infoError } = await adminSupabase
+    const { error: infoError } = await adminSupabase
       .from('subcategories')
       .select('*')
       .limit(1);

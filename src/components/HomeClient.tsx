@@ -118,14 +118,7 @@ export default function HomeClient({
     gcTime: 10 * 60_000,
   });
 
-  const categoriesWithSubcategoriesQuery = useQuery<
-    CategoryWithSubcategories[]
-  >({
-    queryKey: [queryKeys.categoryRows, "with-subcategories"],
-    queryFn: categoriesWithSubcategoriesQueryFn,
-    staleTime: 5 * 60_000,
-    gcTime: 10 * 60_000,
-  });
+
 
   const products = useMemo(
     () => productsQuery.data ?? [],

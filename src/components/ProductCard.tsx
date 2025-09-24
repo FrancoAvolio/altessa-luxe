@@ -34,7 +34,7 @@ export default function ProductCard({
   const [index, setIndex] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [inView, setInView] = useState(false);
-  const [isHoveringMedia, setIsHoveringMedia] = useState(false);
+
   const [isImageLoading, setIsImageLoading] = useState(true);
   const [loadedSources, setLoadedSources] = useState<Record<string, boolean>>(
     {}
@@ -118,8 +118,6 @@ export default function ProductCard({
       <Link href={href} className="block">
         <div
           className="relative h-72 bg-gradient-to-br from-white via-white to-neutral-200"
-          onPointerEnter={() => setIsHoveringMedia(true)}
-          onPointerLeave={() => setIsHoveringMedia(false)}
         >
           {mediaCount > 0 && !imageError ? (
             isVideo(current) ? (

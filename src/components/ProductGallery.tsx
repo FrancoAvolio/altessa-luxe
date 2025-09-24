@@ -53,7 +53,7 @@ export default function ProductGallery({ images, alt }: ProductGalleryProps) {
       initialLoading[index] = true; // Assume all start loading
     });
     setImageLoading(initialLoading);
-  }, []);
+  }, [images]);
 
   // Observer de tamaño del contenedor
   useEffect(() => {
